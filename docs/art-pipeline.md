@@ -16,14 +16,20 @@ Stay **pixel-aligned** (integer scales, `imageSmoothingEnabled = false`).
 
 ## Raster reference → swarm glyphs (8×8)
 
-The **dense swarm** still draws **`Bitmap8` glyphs** (fast). To make those bugs **look like your beetle reference** instead of the default shapes:
+The **dense swarm** draws **`Bitmap8` glyphs** (fast), **per preset** under **`src/viz/swarmGlyphs/<preset>.ts`** (`SWARM_GLYPHS` — two grids for the twin-phase swap).
 
-1. Save a PNG as **`public/art/scute/beetle-ref.png`** (photo, card art crop, or line art — square-ish works best; transparency is OK).
-2. Run **`npm run beetle:glyphs`**.  
-   This trims empty margins, resizes to **8×8**, thresholds luminance into ink, and writes **`src/viz/scuteBeetleGlyphsFromRef.ts`** (two thresholds → two variants for the existing twin-phase swap).
-3. Tweak thresholds in **`scripts/beetle-ref-to-glyphs.mjs`** or **hand-edit** the generated `0`/`1` grid if a horn or leg needs nudging.
+| Preset | Reference PNG (try in order) | Generated module |
+|--------|------------------------------|------------------|
+| `scute` | `public/art/scute/token-ref.png`, then legacy `beetle-ref.png` | `swarmGlyphs/scute.ts` |
+| `horde` | `public/art/horde/token-ref.png` | `swarmGlyphs/horde.ts` |
 
-That path is separate from **`beetle.png` + `atlas.json`**, which is for the **optional higher-res hero** (sliced parts), not the tiny field glyphs.
+1. Drop your token art (photo, crop, or line art — high contrast helps; transparency OK).
+2. Run **`npm run glyphs:build -- scute`** or **`npm run glyphs:build -- horde`** (or both: `… -- scute horde`). With **no args**, the script updates **every** preset that has a readable reference file.
+3. Tweak thresholds in **`scripts/ref-to-glyphs.mjs`** or **hand-edit** the `0`/`1` grids.
+
+**New preset:** extend `PresetId`, add **`swarmGlyphs/<id>.ts`**, wire **`glyphs.ts`** (`SWARM_GLYPHS_BY_PRESET`), and add **`PRESET_CONFIG`** in **`scripts/ref-to-glyphs.mjs`** (see JSDoc on `PresetId` in `src/presets/types.ts`).
+
+That path is separate from **`beetle.png` + `atlas.json`**, which is for the **optional higher-res Scute hero** (sliced parts), not the tiny field glyphs.
 
 ## Files
 
@@ -47,6 +53,6 @@ Suggested part IDs (trim or rename as you draw):
 2. `fetch` + parse manifest; `Image` → drawImage slices in canvas.
 3. **Debug**: one screen or query flag to draw the beetle with **pivot crosshairs** to verify JSON.
 4. **Playback**: 2–4-frame idle (swap textures or rotate horn ± few degrees) before full walk cycles.
-5. **Integration**: use atlas only when `n <= N` or zoom > threshold; else keep `BUG_VARIANTS`.
+5. **Integration**: use atlas only when `n <= N` or zoom > threshold; else keep `swarmGlyphVariants(presetId)` (8×8 presets).
 
 Paste into a new chat: *“Continue `docs/art-pipeline.md` — implement atlas loader + debug draw for Scute.”* and attach `@docs/art-pipeline.md` `@src/viz/beetleAtlas.types.ts` `@src/viz/PixelField.tsx`.

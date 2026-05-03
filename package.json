@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "beetle:glyphs": "node scripts/beetle-ref-to-glyphs.mjs"
+    "glyphs:build": "node scripts/ref-to-glyphs.mjs"
   },
   "dependencies": {
     "react": "^19.2.5",

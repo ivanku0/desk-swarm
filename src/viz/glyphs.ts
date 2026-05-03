@@ -1,33 +1,19 @@
-import { SCUTE_BUG_REF_GLYPHS } from './scuteBeetleGlyphsFromRef'
+import type { PresetId } from '../presets/types'
+import { SWARM_GLYPHS as SCUTE_SWARM_GLYPHS } from './swarmGlyphs/scute'
+import { SWARM_GLYPHS as HORDE_SWARM_GLYPHS } from './swarmGlyphs/horde'
 
 /** 8×8 pixel patterns, 1 = ink */
 export type Bitmap8 = readonly (readonly number[])[]
 
-/** Scute field bugs — from `scuteBeetleGlyphsFromRef.ts` (see `npm run beetle:glyphs`). */
-export const BUG_VARIANTS: readonly Bitmap8[] = SCUTE_BUG_REF_GLYPHS
+const SWARM_GLYPHS_BY_PRESET = {
+  scute: SCUTE_SWARM_GLYPHS,
+  horde: HORDE_SWARM_GLYPHS,
+} satisfies Record<PresetId, readonly Bitmap8[]>
 
-export const GOBLIN_VARIANTS: readonly Bitmap8[] = [
-  [
-    [0, 0, 1, 1, 1, 1, 0, 0],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [1, 1, 0, 1, 1, 0, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [0, 1, 0, 1, 1, 0, 1, 0],
-    [1, 1, 0, 0, 0, 0, 1, 1],
-    [0, 0, 1, 1, 1, 1, 0, 0],
-  ],
-  [
-    [0, 0, 1, 1, 1, 1, 0, 0],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 1, 1, 1, 1, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 1, 0, 1, 1, 0, 1, 0],
-    [0, 1, 1, 0, 0, 1, 1, 0],
-    [1, 0, 0, 0, 0, 0, 0, 1],
-  ],
-] as const
+/** Two variant frames per preset (twin-phase swap on the field). */
+export function swarmGlyphVariants(presetId: PresetId): readonly Bitmap8[] {
+  return SWARM_GLYPHS_BY_PRESET[presetId]
+}
 
 export function mulberry32(seed: number) {
   return function () {

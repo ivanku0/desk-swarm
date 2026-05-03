@@ -9,7 +9,7 @@ import {
 } from 'react'
 import type { PresetId } from '../presets/types'
 import type { BeetleAtlasManifest } from './beetleAtlas.types'
-import { BUG_VARIANTS, GOBLIN_VARIANTS, mulberry32, type Bitmap8 } from './glyphs'
+import { mulberry32, swarmGlyphVariants, type Bitmap8 } from './glyphs'
 import { cell01 } from './cellHash'
 import {
   SWARM_COLS,
@@ -186,7 +186,7 @@ function drawNormalContent(
   scuteAtlasManifest: BeetleAtlasManifest | null,
 ) {
   const inks = presetId === 'horde' ? HORDE_INK_SHADES : BUG_INK_SHADES
-  const variants = presetId === 'horde' ? GOBLIN_VARIANTS : BUG_VARIANTS
+  const variants = swarmGlyphVariants(presetId)
   const panel = '#dfeedd'
 
   ctx.fillStyle = panel
@@ -593,7 +593,7 @@ export const PixelField = forwardRef<
     particlesRef.current = buildParticles(count, presetId, w, h)
     const start = performance.now()
     const dur = 620
-    const variants = presetId === 'horde' ? GOBLIN_VARIANTS : BUG_VARIANTS
+    const variants = swarmGlyphVariants(presetId)
 
     let deathRaf = 0
     const tick = () => {
