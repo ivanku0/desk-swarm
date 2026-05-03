@@ -1,7 +1,7 @@
 {
-  "name": "Desk Swarm",
-  "short_name": "Desk Swarm",
-  "description": "Math is for blockers. Track tokens fast. Casual Commander swarm counter for Scute Swarm, Homunculus Horde, and more.",
+  "name": "swarm desk",
+  "short_name": "swarm desk",
+  "description": "math is for blockers. track tokens quickly. Casual Commander swarm counter for Scute Swarm, Homunculus Horde, and more.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#c8d9c4",
