@@ -36,18 +36,28 @@ function swarmGlyphSizeMul(n: number): number {
 
 /**
  * World-space draw size for one token (sprite or 8×8 grid scaled to `glyphSize`).
- * For small counts, size comes from the **viewport** so a few scutes fill the board;
- * for larger swarms, size stays tied to the **grid cell** so more fit on screen.
+ * Shrinks **continuously** with `n`: viewport-driven when sparse, asymptotes to the
+ * dense **cell cap** (`cellSlot * swarmGlyphSizeMul`) so there is no jump at n=9.
  */
 function swarmGlyphDrawSize(w: number, h: number, cw: number, ch: number, n: number): number {
+  const vmin = Math.min(w, h)
   const cellSlot = Math.min(cw, ch) * 0.68
   const cellBound = cellSlot * swarmGlyphSizeMul(n)
-  if (n <= 8) {
-    const vmin = Math.min(w, h)
-    const target = (vmin * 0.52) / Math.sqrt(n)
-    return Math.min(vmin * 0.48, Math.max(cellBound, target))
-  }
-  return cellBound
+  const headroom = (vmin * 0.54) / Math.pow(Math.max(n, 1), 0.34)
+  return Math.min(vmin * 0.48, Math.max(cellBound, headroom))
+}
+
+/** Push occupied cells slightly away from board center so small swarms breathe. */
+const SWARM_POSITION_SPREAD = 1.17
+
+function swarmedCellCenterPx(gx: number, gy: number, cw: number, ch: number): { ax: number; ay: number } {
+  const boardCx = (SWARM_COLS / 2) * cw
+  const boardCy = (SWARM_ROWS / 2) * ch
+  const cellCx = (gx + 0.5) * cw
+  const cellCy = (gy + 0.5) * ch
+  const ax = boardCx + (cellCx - boardCx) * SWARM_POSITION_SPREAD
+  const ay = boardCy + (cellCy - boardCy) * SWARM_POSITION_SPREAD
+  return { ax, ay }
 }
 
 function swarmMotionAtten(n: number): number {
@@ -63,7 +73,7 @@ function swarmColonyDrift(
   reducedMotion: boolean,
 ): { dx: number; dy: number } {
   if (reducedMotion) return { dx: 0, dy: 0 }
-  const switchMs = 620 + ((layoutSeed >>> 0) % 380)
+  const switchMs = 920 + ((layoutSeed >>> 0) % 520)
   const seg = Math.floor(timeMs / switchMs)
   const rng = mulberry32((layoutSeed ^ seg * 0x9e3779b9) >>> 0)
   const nVec = 4 + (layoutSeed & 1)
@@ -79,7 +89,7 @@ function swarmColonyDrift(
 }
 
 /** Shared two-step idle timing for all glyphs (variant + scale pulse). */
-const GLYPH_TWIN_MS = 400
+const GLYPH_TWIN_MS = 560
 
 function centerLensPan(canvas: HTMLCanvasElement): { x: number; y: number } {
   const ww = canvas.clientWidth
@@ -112,6 +122,8 @@ interface Particle {
   variant: number
   life: number
   ink: string
+  /** Horizontal mirror (−1 / 1) for wipe splats. */
+  flipX: number
 }
 
 function drawGlyph(
@@ -149,9 +161,11 @@ function buildParticles(
     const gx = idx % SWARM_COLS
     const gy = Math.floor(idx / SWARM_COLS)
     const rng = mulberry32((gx << 16) ^ gy ^ layoutSeed)
+    const { ax, ay } = swarmedCellCenterPx(gx, gy, cw, ch)
+    const flipX = cell01(gx, gy, layoutSeed ^ 0x51ed81a1) < 0.5 ? -1 : 1
     list.push({
-      x: gx * cw + cw / 2,
-      y: gy * ch + ch / 2,
+      x: ax,
+      y: ay,
       vx: (rng() - 0.5) * 14,
       vy: (rng() - 0.5) * 14 - 4,
       rot: 0,
@@ -159,6 +173,7 @@ function buildParticles(
       variant: Math.floor(rng() * 2),
       life: 1,
       ink: inks[i % 3]!,
+      flipX,
     })
   }
   return list
@@ -301,47 +316,45 @@ function drawNormalContent(
           Math.floor(cell01(gx, gy, layoutSeed ^ 0x9e3779b1) * variants.length) % variants.length
         const vi = (viBase + twinPhase) % variants.length
         const glyphInk = inks[(shadeRing[idx] ?? 0) % 3]!
-        const baseX = gx * cw + cw * 0.11
-        const baseY = gy * ch + ch * 0.11
+        const { ax, ay } = swarmedCellCenterPx(gx, gy, cw, ch)
+        const flipX = cell01(gx, gy, layoutSeed ^ 0x51ed81a1) < 0.5 ? -1 : 1
         const bobX = reducedMotion
           ? 0
-          : Math.sin(t * 2.1 + gx * 0.71 + gy * 0.33) *
+          : Math.sin(t * 1.45 + gx * 0.71 + gy * 0.33) *
             cw *
             0.2 *
             motionK *
             swarmLocalMotionMul
         const bobY = reducedMotion
           ? 0
-          : Math.cos(t * 1.85 + gx * 0.44 + gy * 0.91) *
+          : Math.cos(t * 1.28 + gx * 0.44 + gy * 0.91) *
             ch *
             0.2 *
             motionK *
             swarmLocalMotionMul
         const crawlX = reducedMotion
           ? 0
-          : Math.sin(t * 0.55 + gx * 0.19 + gy * 0.27) *
+          : Math.sin(t * 0.38 + gx * 0.19 + gy * 0.27) *
             cw *
             0.12 *
             motionK *
             swarmLocalMotionMul
         const crawlY = reducedMotion
           ? 0
-          : Math.cos(t * 0.48 + gx * 0.23 + gy * 0.31) *
+          : Math.cos(t * 0.33 + gx * 0.23 + gy * 0.31) *
             ch *
             0.12 *
             motionK *
             swarmLocalMotionMul
         const jitter = reducedMotion
           ? 0
-          : Math.sin(t * 3.3 + gx * gy * 0.02) * 0.04 * motionK * swarmLocalMotionMul
+          : Math.sin(t * 2.2 + gx * gy * 0.02) * 0.04 * motionK * swarmLocalMotionMul
         const glyphSize = swarmGlyphDrawSize(w, h, cw, ch, n)
         ctx.save()
-        ctx.translate(
-          baseX + drift.dx + bobX + crawlX + glyphSize / 2,
-          baseY + drift.dy + bobY + crawlY + glyphSize / 2,
-        )
+        ctx.translate(ax + drift.dx + bobX + crawlX, ay + drift.dy + bobY + crawlY)
         ctx.rotate(jitter)
         ctx.scale(twinPop, twinPop)
+        ctx.scale(flipX, 1)
         if (useTokenSprite) {
           drawSwarmTokenSpriteCentered(ctx, swarmFrames, vi, glyphSize / 2)
         } else {
@@ -355,7 +368,7 @@ function drawNormalContent(
 
   ctx.restore()
 
-  const PULSE_MS = 520
+  const PULSE_MS = 680
   if (
     pulseKey > 0 &&
     pulseStartedAt != null &&
@@ -646,7 +659,7 @@ export const PixelField = forwardRef<
     const h = canvas.clientHeight
     particlesRef.current = buildParticles(count, presetId, w, h)
     const start = performance.now()
-    const dur = 620
+    const dur = 820
     const variants = swarmGlyphVariants(presetId)
     const tokenFrames = swarmTokens?.[presetId] ?? { a: null, b: null }
     const useTok = swarmSpriteReady(tokenFrames)
@@ -683,6 +696,7 @@ export const PixelField = forwardRef<
         ctx.translate(pt.x, pt.y)
         ctx.rotate(pt.rot)
         ctx.globalAlpha = Math.max(0, pt.life)
+        ctx.scale(pt.flipX, 1)
         if (useTok) {
           drawSwarmTokenSpriteCentered(ctx, tokenFrames, pt.variant, splat / 2)
         } else {
@@ -729,7 +743,7 @@ export const PixelField = forwardRef<
       const panel = '#dfeedd'
       ctx.fillStyle = panel
       ctx.fillRect(0, 0, w, h)
-      const blink = Math.sin((performance.now() - start) / 180) > 0
+      const blink = Math.sin((performance.now() - start) / 260) > 0
       if (blink) {
         ctx.fillStyle = glyphInk
         ctx.font = `${Math.min(w, h) * 0.12}px ui-monospace, monospace`
@@ -737,7 +751,7 @@ export const PixelField = forwardRef<
         ctx.textBaseline = 'middle'
         ctx.fillText('· · ·', w / 2, h / 2)
       }
-      if (performance.now() - start < 720) {
+      if (performance.now() - start < 920) {
         jokeRafRef.current = requestAnimationFrame(loop)
       } else {
         onEmptyJokeComplete?.()

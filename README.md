@@ -20,7 +20,7 @@ If you only ever need “how many Scutes” or “how big is the Horde,” this 
 
 - **Presets:** **Scute Swarm** (`2G`) and **Homunculus Horde** (`3U`), with oracle text and Gatherer rulings pulled from **Scryfall** for accuracy in the info UI.
 - **Counter model:** `BigInt`-backed count, **undo**, and preset-specific “grow” behavior (house rules for how doubling / reset-at-zero works at the table).
-- **Swarm field:** canvas **token sprites** (PNG, with 8×8 fallback), **cardinal proliferation** growth order for both presets so the colony feels clumped rather than ring-shaped, shared **drift** motion. **Few tokens (≤8)** draw **large** on the viewport (not just grid-cell size); denser swarms shrink to the cell grid. Camera scale **holds for counts 1–8**, then **steps by octave** before the legacy log-step curve above 256.
+- **Swarm field:** canvas **token sprites** (PNG, with 8×8 fallback), **cardinal proliferation** growth order for both presets so the colony feels clumped rather than ring-shaped, shared **drift** motion (slowed for readability). Token **draw size** eases **continuously** from viewport-large down to the dense cell cap as `n` grows (no jump at 8→9); positions **spread** slightly from center with random **left/right** facing. Camera scale **holds for counts 1–8**, then **steps by octave** before the legacy log-step curve above 256.
 - **Main menu:** carousel of pantone-style “cards,” flavor lines, plain-text mana in the corner, **recent stats** drawer, and CTAs per preset.
 - **Info sheet:** card-like layout with tabs for **Oracle text**, **Rules** (links + rulings), and **Tips** (how the app buttons behave).
 - **Tests:** Vitest coverage for layout math, zoom scaling, and core model behavior.
