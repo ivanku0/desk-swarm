@@ -5,8 +5,10 @@ import {
   useImperativeHandle,
   useLayoutEffect,
   useRef,
+  useState,
 } from 'react'
 import type { PresetId } from '../presets/types'
+import type { BeetleAtlasManifest } from './beetleAtlas.types'
 import { BUG_VARIANTS, GOBLIN_VARIANTS, mulberry32, type Bitmap8 } from './glyphs'
 import { cell01 } from './cellHash'
 import {
@@ -17,6 +19,9 @@ import {
   layoutSeedForPreset,
   swarmGlyphCountForCanvas,
 } from './swarmLayout'
+import { BEETLE_ATLAS_MANIFEST_URL } from './beetleAtlas.types'
+import { fetchBeetleAtlasManifest, loadBeetleAtlasBundle } from './beetleAtlasLoader'
+import { drawBeetleAtlasDebugWireframe, drawBeetleFromAtlas } from './beetleAtlasDraw'
 
 /** Extra scale for small swarms — capped low so neighbors do not stack on each other. */
 function swarmGlyphSizeMul(n: number): number {
@@ -154,6 +159,16 @@ function clampPan(px: number, py: number, w: number, h: number, scale: number) {
   }
 }
 
+type ScuteAtlasPaint =
+  | { kind: 'none' }
+  | { kind: 'ready'; image: HTMLImageElement }
+  | { kind: 'manifestOnly' }
+
+function readBeetleDebugQuery(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).has('beetleDebug')
+}
+
 function drawNormalContent(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -167,6 +182,8 @@ function drawNormalContent(
   panX: number,
   panY: number,
   reducedMotion: boolean,
+  scuteAtlas: ScuteAtlasPaint,
+  scuteAtlasManifest: BeetleAtlasManifest | null,
 ) {
   const inks = presetId === 'horde' ? HORDE_INK_SHADES : BUG_INK_SHADES
   const variants = presetId === 'horde' ? GOBLIN_VARIANTS : BUG_VARIANTS
@@ -216,10 +233,37 @@ function drawNormalContent(
     const vi = (viBase + twinPhase) % variants.length
     const lens = (Math.min(w, h) / zoomScale) * 0.62
     const lensInk = inks[0]!
+    const beetleDebug = readBeetleDebugQuery()
+    const heroRadius = lens * 0.46
+    const useAtlasHero =
+      presetId === 'scute' &&
+      scuteAtlasManifest &&
+      (scuteAtlas.kind === 'ready' || (scuteAtlas.kind === 'manifestOnly' && beetleDebug))
+
     ctx.save()
     ctx.translate(cellCenterX, cellCenterY)
     ctx.scale(twinPop, twinPop)
-    drawGlyph(ctx, variants[vi]!, -lens / 2, -lens / 2, lens, lensInk)
+    if (useAtlasHero && scuteAtlas.kind === 'ready' && scuteAtlasManifest) {
+      drawBeetleFromAtlas(ctx, {
+        manifest: scuteAtlasManifest,
+        image: scuteAtlas.image,
+        cx: 0,
+        cy: 0,
+        targetRadiusPx: heroRadius,
+        timeMs,
+        reducedMotion,
+        debugPivots: beetleDebug,
+      })
+    } else if (
+      presetId === 'scute' &&
+      scuteAtlas.kind === 'manifestOnly' &&
+      beetleDebug &&
+      scuteAtlasManifest
+    ) {
+      drawBeetleAtlasDebugWireframe(ctx, scuteAtlasManifest, 0, 0, heroRadius)
+    } else {
+      drawGlyph(ctx, variants[vi]!, -lens / 2, -lens / 2, lens, lensInk)
+    }
     ctx.restore()
   } else {
     for (let gy = 0; gy < SWARM_ROWS; gy++) {
@@ -324,6 +368,40 @@ export const PixelField = forwardRef<
   },
   ref,
 ) {
+  const [scuteAtlas, setScuteAtlas] = useState<ScuteAtlasPaint>({ kind: 'none' })
+  const [scuteAtlasManifest, setScuteAtlasManifest] = useState<BeetleAtlasManifest | null>(null)
+
+  useEffect(() => {
+    if (presetId !== 'scute') {
+      setScuteAtlas({ kind: 'none' })
+      setScuteAtlasManifest(null)
+      return
+    }
+    let cancelled = false
+    loadBeetleAtlasBundle(BEETLE_ATLAS_MANIFEST_URL)
+      .then((bundle) => {
+        if (cancelled) return
+        setScuteAtlasManifest(bundle.manifest)
+        setScuteAtlas({ kind: 'ready', image: bundle.image })
+      })
+      .catch(() => {
+        fetchBeetleAtlasManifest(BEETLE_ATLAS_MANIFEST_URL)
+          .then((manifest) => {
+            if (cancelled) return
+            setScuteAtlasManifest(manifest)
+            setScuteAtlas({ kind: 'manifestOnly' })
+          })
+          .catch(() => {
+            if (cancelled) return
+            setScuteAtlasManifest(null)
+            setScuteAtlas({ kind: 'none' })
+          })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [presetId])
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const jokeRafRef = useRef(0)
@@ -472,6 +550,8 @@ export const PixelField = forwardRef<
         px,
         py,
         reducedMotion,
+        scuteAtlas,
+        scuteAtlasManifest,
       )
     }
 
@@ -496,7 +576,7 @@ export const PixelField = forwardRef<
       ro.disconnect()
       cancelAnimationFrame(raf)
     }
-  }, [presetId, count, pulseKey, fieldMode, reducedMotion, zoomScale])
+  }, [presetId, count, pulseKey, fieldMode, reducedMotion, zoomScale, scuteAtlas, scuteAtlasManifest])
 
   /** Dying animation */
   useEffect(() => {
