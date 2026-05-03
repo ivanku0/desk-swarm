@@ -48,12 +48,16 @@ export function toggleKrenkoPresence(
   return { total: total + 1n, present: true }
 }
 
-/** Boss leaves; goblin total unchanged (toy track — not a comprehensive rules engine). */
+/**
+ * Boss leaves. Horde count is unchanged unless the board was only Krenko (total 1),
+ * in which case the tracker clears to zero.
+ */
 export function dismissKrenkoBossKeepHorde(
   total: bigint,
   present: boolean,
 ): { total: bigint; present: boolean } {
   if (!present) return { total, present: false }
+  if (total <= 1n) return { total: 0n, present: false }
   return { total, present: false }
 }
 

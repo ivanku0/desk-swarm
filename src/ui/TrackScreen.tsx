@@ -246,6 +246,10 @@ export function TrackScreen({
         return
       }
       if (presetId === 'krenko' && krenkoPresentRef.current) {
+        if (c === 1n) {
+          killBossOnlyFromSkull()
+          return
+        }
         setWipeChoiceOpen(true)
         return
       }

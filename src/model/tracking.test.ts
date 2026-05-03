@@ -61,9 +61,13 @@ describe('tracking', () => {
     expect(toggleKrenkoPresence(5n, true)).toEqual({ total: 4n, present: false })
   })
 
-  it('dismiss boss keeps horde count', () => {
+  it('dismiss boss keeps horde count when goblins remain', () => {
     expect(dismissKrenkoBossKeepHorde(12n, true)).toEqual({ total: 12n, present: false })
     expect(dismissKrenkoBossKeepHorde(12n, false)).toEqual({ total: 12n, present: false })
+  })
+
+  it('dismiss boss with only Krenko on counter clears to zero', () => {
+    expect(dismissKrenkoBossKeepHorde(1n, true)).toEqual({ total: 0n, present: false })
   })
 
   it('manual count parse accepts only digits', () => {
