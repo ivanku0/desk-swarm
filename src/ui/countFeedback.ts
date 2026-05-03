@@ -5,6 +5,7 @@ export type DeltaFlashAnchor = 'undo' | 'grow' | 'minus1' | 'plus1' | 'reset' | 
 const HYPE_LINES: Record<PresetId, readonly [string, string, string]> = {
   scute: ['scute scute', 'SCUTE', 'scute'],
   horde: ["homunculin'", 'hording time', 'for the Horde'],
+  krenko: ['krenk krenk', 'MOB BOSS', 'goblin gang'],
 }
 
 export function deltaLabel(prev: bigint, next: bigint): string {

@@ -111,20 +111,37 @@ export function InfoSheet({
                 <h4 className="info-sheet__tipsHeading">Controls</h4>
                 <ul className="info-sheet__tips">
                   <li>
-                    <strong>{p.growLabel}</strong>{' '}
+                    <strong>{presetId === 'krenko' ? 'Cast Krenko / Krenk It' : p.growLabel}</strong>{' '}
                     {presetId === 'scute'
                       ? 'adds +1 from 1 through 6, then doubles from 7 onward; at zero it creates a new one and sets the count to 1.'
-                      : 'doubles your counter when it is above zero; at zero it creates a new one and sets the count to 1.'}{' '}
+                      : presetId === 'krenko'
+                        ? 'Cast Krenko summons the boss from an empty board (count 1) or adds him (+1 goblin). After that, Krenk It doubles your total while the count is above zero.'
+                        : 'doubles your counter when it is above zero; at zero it creates a new one and sets the count to 1.'}{' '}
                     (casual commander toy—not comprehensive rules).
                   </li>
                   <li>
                     undo (curved arrow), −, and + adjust the count; − / + flash −1 or +1 above the
                     buttons when used.
+                    {presetId === 'krenko'
+                      ? ' At zero goblins, Krenko leaves the board automatically.'
+                      : null}
                   </li>
                   <li>
                     skull (top-left on the board, long-press): wipes the board and clears the counter
-                    with a death animation; at 0, a short empty-board joke plays.
+                    with a death animation.
+                    {presetId === 'krenko'
+                      ? ' If Krenko is present, skull hold opens a choice: wipe all or remove only Krenko (goblins stay).'
+                      : null}
                   </li>
+                  {presetId === 'krenko' ? (
+                    <li>
+                      Tap the <strong>digit meter</strong> to type a new goblin total (digits only).
+                    </li>
+                  ) : (
+                    <li>
+                      Tap the <strong>digit meter</strong> to type a new total (digits only).
+                    </li>
+                  )}
                 </ul>
               </>
             ) : null}

@@ -4,11 +4,14 @@ import type { PresetId } from '../presets/types'
 export const SWARM_TOKEN_PRIMARY: Record<PresetId, string> = {
   scute: '/art/scute/token-ref.png',
   horde: '/art/horde/token-ref.png',
+  krenko: '/art/krenko/token-ref.png',
 }
 
 /** Optional second frame for twin-phase swap (`token-ref-2.png`). */
 export function swarmTokenSecondaryUrl(presetId: PresetId): string {
-  return presetId === 'scute' ? '/art/scute/token-ref-2.png' : '/art/horde/token-ref-2.png'
+  if (presetId === 'scute') return '/art/scute/token-ref-2.png'
+  if (presetId === 'krenko') return '/art/krenko/token-ref-2.png'
+  return '/art/horde/token-ref-2.png'
 }
 
 export interface SwarmTokenFrames {
@@ -38,9 +41,12 @@ export async function loadSwarmTokenFrames(presetId: PresetId): Promise<SwarmTok
 }
 
 export async function loadAllSwarmTokenFrames(): Promise<Record<PresetId, SwarmTokenFrames>> {
-  const scute = await loadSwarmTokenFrames('scute')
-  const horde = await loadSwarmTokenFrames('horde')
-  return { scute, horde }
+  const [scute, horde, krenko] = await Promise.all([
+    loadSwarmTokenFrames('scute'),
+    loadSwarmTokenFrames('horde'),
+    loadSwarmTokenFrames('krenko'),
+  ])
+  return { scute, horde, krenko }
 }
 
 function pickFrame(frames: SwarmTokenFrames, variantIndex: number): HTMLImageElement | null {

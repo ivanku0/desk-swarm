@@ -64,9 +64,29 @@ const HORDE: CardBundle = {
   ],
 }
 
+const KRENKO: CardBundle = {
+  presetId: 'krenko',
+  cardName: 'Krenko, Mob Boss',
+  manaDisplay: '2RR',
+  typeLine: 'Legendary Creature — Goblin Warrior',
+  powerToughness: '3 / 3',
+  oracleText:
+    'Tap: Create X 1/1 red Goblin creature tokens, where X is the number of Goblins you control.',
+  flavorText:
+    '"You built a city full of people who need jobs. I built a city full of people who need work done."\n—Krenko, *The Labor Relations Codex*',
+  scryfallUrl: 'https://scryfall.com/card/m13/138/krenko-mob-boss',
+  gathererUrl:
+    'https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=253536&printed=false',
+  rulings: [
+    "The number of Goblins you control is counted when Krenko's ability resolves, after you get a Goblin token from that ability.",
+    'If you control no other Goblins when the ability resolves, you will still put one Goblin token onto the battlefield.',
+  ],
+}
+
 const MAP: Record<PresetId, CardBundle> = {
   scute: SCUTE,
   horde: HORDE,
+  krenko: KRENKO,
 }
 
 export function getCardBundle(id: PresetId): CardBundle {

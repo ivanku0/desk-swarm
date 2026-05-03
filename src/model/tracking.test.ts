@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { applyMicro, growCount, growCountForPreset, DEFAULT_COUNT } from './tracking'
+import {
+  applyMicro,
+  growCount,
+  growCountForPreset,
+  DEFAULT_COUNT,
+  krenkItCount,
+  toggleKrenkoPresence,
+  dismissKrenkoBossKeepHorde,
+  parseManualCountInput,
+} from './tracking'
 
 describe('tracking', () => {
   it('doubles', () => {
@@ -24,6 +33,11 @@ describe('tracking', () => {
     expect(growCountForPreset(0n, 'horde')).toBe(1n)
   })
 
+  it('krenko grow is handled in UI via krenkItCount, not growCountForPreset', () => {
+    expect(growCountForPreset(0n, 'krenko')).toBe(0n)
+    expect(growCountForPreset(5n, 'krenko')).toBe(5n)
+  })
+
   it('micro clamps at zero', () => {
     expect(applyMicro(1n, -1)).toBe(0n)
     expect(applyMicro(0n, -1)).toBe(0n)
@@ -32,5 +46,30 @@ describe('tracking', () => {
 
   it('default count', () => {
     expect(DEFAULT_COUNT).toBe(1n)
+  })
+
+  it('krenk doubles only with boss present', () => {
+    expect(krenkItCount(5n, false)).toBe(5n)
+    expect(krenkItCount(0n, true)).toBe(0n)
+    expect(krenkItCount(3n, true)).toBe(6n)
+  })
+
+  it('toggle krenko presence adjusts total', () => {
+    expect(toggleKrenkoPresence(0n, false)).toEqual({ total: 1n, present: true })
+    expect(toggleKrenkoPresence(3n, false)).toEqual({ total: 4n, present: true })
+    expect(toggleKrenkoPresence(1n, true)).toEqual({ total: 0n, present: false })
+    expect(toggleKrenkoPresence(5n, true)).toEqual({ total: 4n, present: false })
+  })
+
+  it('dismiss boss keeps horde count', () => {
+    expect(dismissKrenkoBossKeepHorde(12n, true)).toEqual({ total: 12n, present: false })
+    expect(dismissKrenkoBossKeepHorde(12n, false)).toEqual({ total: 12n, present: false })
+  })
+
+  it('manual count parse accepts only digits', () => {
+    expect(parseManualCountInput('  42  ')).toBe(42n)
+    expect(parseManualCountInput('1_000')).toBe(1000n)
+    expect(parseManualCountInput('abc')).toBe(null)
+    expect(parseManualCountInput('')).toBe(null)
   })
 })

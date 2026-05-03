@@ -64,10 +64,11 @@ describe('swarmLayout', () => {
     for (const idx of a) expect(b.has(idx)).toBe(true)
   })
 
-  it('scute and horde colony seeds stay the field center', () => {
+  it('scute, horde, and krenko colony seeds stay the field center', () => {
     const c = centerIdx()
     expect(getSwarmCellOrder('scute')[0]).toBe(c)
     expect(getSwarmCellOrder('horde')[0]).toBe(c)
+    expect(getSwarmCellOrder('krenko')[0]).toBe(c)
   })
 
   it('cardinal proliferation fills the grid with no duplicates', () => {

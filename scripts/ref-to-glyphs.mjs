@@ -27,6 +27,10 @@ const PRESET_CONFIG = {
     outRel: 'src/viz/swarmGlyphs/horde.ts',
     refTry: ['public/art/horde/token-ref.png'],
   },
+  krenko: {
+    outRel: 'src/viz/swarmGlyphs/krenko.ts',
+    refTry: ['public/art/krenko/token-ref.png'],
+  },
 }
 
 function gridToRows(data, width, height, threshold, alphaMin) {

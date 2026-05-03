@@ -33,7 +33,9 @@ export default function App() {
     setPhase('track')
     appendActivity({
       presetId: id,
-      text: `started ${id === 'scute' ? 'scute swarm' : 'homunculus horde'}`,
+      text: `started ${
+        id === 'scute' ? 'scute swarm' : id === 'krenko' ? 'krenko track' : 'homunculus horde'
+      }`,
     })
   }
 

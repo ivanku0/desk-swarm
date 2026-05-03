@@ -17,7 +17,8 @@ export async function composeShareImage(
   if (!ctx) return null
   const panel = '#dfeedd'
   const ink = '#1a2e1a'
-  const accent = presetId === 'horde' ? '#2a6b66' : '#3d7a4a'
+  const accent =
+    presetId === 'horde' ? '#2a6b66' : presetId === 'krenko' ? '#6e3a3e' : '#3d7a4a'
   ctx.fillStyle = panel
   ctx.fillRect(0, 0, W, H)
   const pad = 36

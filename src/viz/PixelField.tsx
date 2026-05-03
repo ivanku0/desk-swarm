@@ -27,6 +27,7 @@ import {
   loadAllSwarmTokenFrames,
   type SwarmTokenFrames,
 } from './swarmTokenSprite'
+import { KRENKO_ASSET_FALLBACK_URLS, KRENKO_ASSET_URLS } from './krenkoAssets'
 
 /** Extra scale for dense swarms — keeps cell-sized glyphs from overlapping when n is large. */
 function swarmGlyphSizeMul(n: number): number {
@@ -159,6 +160,18 @@ export interface PixelFieldHandle {
 /** Three greens / three teals — cycles with swarm birth order. */
 const BUG_INK_SHADES = ['#16341c', '#1f4a28', '#2d5f36'] as const
 const HORDE_INK_SHADES = ['#1f5552', '#2a6b66', '#3a8a82'] as const
+const KRENKO_INK_SHADES = ['#2c181a', '#3d2527', '#4a2f32'] as const
+const KRENKO_PANEL = '#ebe6e2'
+
+function inkShadesForPreset(presetId: PresetId) {
+  if (presetId === 'horde') return HORDE_INK_SHADES
+  if (presetId === 'krenko') return KRENKO_INK_SHADES
+  return BUG_INK_SHADES
+}
+
+function panelColorForPreset(presetId: PresetId) {
+  return presetId === 'krenko' ? KRENKO_PANEL : '#dfeedd'
+}
 
 interface Particle {
   x: number
@@ -191,6 +204,174 @@ function drawGlyph(
   }
 }
 
+function drawImageCentered(ctx: CanvasRenderingContext2D, img: HTMLImageElement, halfBox: number) {
+  const nw = img.naturalWidth
+  const nh = img.naturalHeight
+  if (nw < 1 || nh < 1) return
+  const box = halfBox * 2
+  const s = box / Math.max(nw, nh)
+  const dw = nw * s
+  const dh = nh * s
+  ctx.drawImage(
+    img,
+    0,
+    0,
+    nw,
+    nh,
+    Math.round(-dw / 2),
+    Math.round(-dh / 2),
+    Math.round(dw),
+    Math.round(dh),
+  )
+}
+
+function pickKrenkoMinionSprite(
+  generationIndex: number,
+  minionA: HTMLImageElement | null,
+  minionB: HTMLImageElement | null,
+): HTMLImageElement | null {
+  const aReady = Boolean(minionA && minionA.naturalWidth > 0)
+  const bReady = Boolean(minionB && minionB.naturalWidth > 0)
+  if (aReady && bReady) {
+    const chooseB = cell01(generationIndex + 11, 7, 0x6a09e667) > 0.5
+    return chooseB ? minionB : minionA
+  }
+  if (aReady) return minionA
+  if (bReady) return minionB
+  return null
+}
+
+function krenkoMinionFlipX(generationIndex: number): -1 | 1 {
+  return cell01(generationIndex + 23, 5, 0xbb67ae85) > 0.5 ? -1 : 1
+}
+
+/** Same A/B choice as orbit minions, but expressed as swarm token frame index (0 / 1). */
+function pickKrenkoMinionFrameVariant(generationIndex: number, frames: SwarmTokenFrames): number {
+  const aReady = Boolean(frames.a && frames.a.naturalWidth > 0)
+  const bReady = Boolean(frames.b && frames.b.naturalWidth > 0)
+  if (aReady && bReady) {
+    return cell01(generationIndex + 11, 7, 0x6a09e667) > 0.5 ? 1 : 0
+  }
+  return 0
+}
+
+/** Krenko track: boss sprite at origin with orbiting minions (per-goblin sprite + facing). */
+function drawKrenkoCenterMob(
+  ctx: CanvasRenderingContext2D,
+  totalCount: bigint,
+  timeMs: number,
+  reducedMotion: boolean,
+  bossHalf: number,
+  bossSprite: HTMLImageElement,
+  minionA: HTMLImageElement | null,
+  minionB: HTMLImageElement | null,
+  minionInkFallback: string,
+) {
+  const minionCount = totalCount >= 3n ? 2 : totalCount === 2n ? 1 : 0
+  const variants = swarmGlyphVariants('krenko')
+  const t = timeMs * 0.001
+  drawImageCentered(ctx, bossSprite, bossHalf)
+  if (minionCount <= 0) return
+  const minionHalf = bossHalf * 0.5
+  const orbitR = bossHalf * 1.42
+  for (let i = 0; i < minionCount; i++) {
+    const omega = reducedMotion ? 0 : i === 0 ? 1.12 : -0.98
+    const ang = reducedMotion ? i * Math.PI * 0.74 + 0.22 : t * omega + i * Math.PI * 0.86
+    const ox = Math.cos(ang) * orbitR
+    const oy = Math.sin(ang) * orbitR
+    const minionSprite = pickKrenkoMinionSprite(i, minionA, minionB)
+    const flipX = krenkoMinionFlipX(i)
+    ctx.save()
+    ctx.translate(ox, oy)
+    ctx.scale(flipX, 1)
+    if (minionSprite) {
+      drawImageCentered(ctx, minionSprite, minionHalf)
+    } else {
+      const vi = 0
+      const sz = minionHalf * 2
+      ctx.translate(-minionHalf, -minionHalf)
+      drawGlyph(ctx, variants[vi]!, 0, 0, sz, minionInkFallback)
+    }
+    ctx.restore()
+  }
+}
+
+function drawKrenkoOrbitSwarm(
+  ctx: CanvasRenderingContext2D,
+  totalCount: bigint,
+  timeMs: number,
+  reducedMotion: boolean,
+  centerX: number,
+  centerY: number,
+  bossHalf: number,
+  bossSprite: HTMLImageElement,
+  minionA: HTMLImageElement | null,
+  minionB: HTMLImageElement | null,
+  minionInkFallback: string,
+) {
+  ctx.save()
+  ctx.translate(centerX, centerY)
+  const t = timeMs * 0.001
+  const bossDriftY = reducedMotion ? 0 : Math.sin(t * 0.56) * bossHalf * 0.07
+  const bossDriftX = reducedMotion ? 0 : Math.cos(t * 0.41) * bossHalf * 0.03
+  const bossTilt = reducedMotion ? 0 : Math.sin(t * 0.34) * 0.022
+  ctx.translate(bossDriftX, bossDriftY)
+  ctx.rotate(bossTilt)
+  drawImageCentered(ctx, bossSprite, bossHalf)
+
+  const nMinions = Math.max(0, Number(totalCount) - 1)
+  if (nMinions <= 0) {
+    ctx.restore()
+    return
+  }
+
+  const variants = swarmGlyphVariants('krenko')
+  const crowdK = Math.min(1, Math.log10(nMinions + 1) / 5.2)
+  const ringGap = bossHalf * (1.02 - crowdK * 0.44)
+  const baseRadius = bossHalf * (1.74 - crowdK * 0.58)
+  const renderCount =
+    nMinions <= 160 ? nMinions : Math.min(540, 160 + Math.floor(Math.sqrt(nMinions - 160) * 18))
+  let placed = 0
+  let ring = 0
+
+  while (placed < renderCount) {
+    const slots = 8 + ring * 8
+    const inRing = Math.min(slots, renderCount - placed)
+    const radius = baseRadius + ring * ringGap
+    const ringSpin = reducedMotion ? 0 : (ring % 2 === 0 ? 0.4 : -0.32) * t
+    for (let j = 0; j < inRing; j++) {
+      const i = placed + j
+      const frac = j / inRing
+      const baseAng = frac * Math.PI * 2 + ring * 0.32
+      const ang = baseAng + ringSpin
+      const wobbleMul = 0.12 - crowdK * 0.07
+      const wobble = reducedMotion ? 0 : Math.sin(t * 2.2 + i * 0.67) * bossHalf * wobbleMul
+      const ox = Math.cos(ang) * (radius + wobble)
+      const oy = Math.sin(ang) * (radius + wobble)
+      const sizeScale = Math.max(0.12, 0.5 - ring * 0.065 - crowdK * 0.09)
+      const minionHalf = bossHalf * sizeScale
+      const minionSprite = pickKrenkoMinionSprite(i, minionA, minionB)
+      const flipX = krenkoMinionFlipX(i)
+      ctx.save()
+      ctx.translate(ox, oy)
+      ctx.scale(flipX, 1)
+      if (minionSprite) {
+        drawImageCentered(ctx, minionSprite, minionHalf)
+      } else {
+        const vi = 0
+        const sz = minionHalf * 2
+        ctx.translate(-minionHalf, -minionHalf)
+        drawGlyph(ctx, variants[vi]!, 0, 0, sz, minionInkFallback)
+      }
+      ctx.restore()
+    }
+    placed += inRing
+    ring += 1
+  }
+
+  ctx.restore()
+}
+
 function buildParticles(
   count: bigint,
   presetId: PresetId,
@@ -200,7 +381,7 @@ function buildParticles(
   const order = getSwarmCellOrder(presetId)
   const n = swarmGlyphCountForCanvas(count)
   const layoutSeed = layoutSeedForPreset(presetId)
-  const inks = presetId === 'horde' ? HORDE_INK_SHADES : BUG_INK_SHADES
+  const inks = inkShadesForPreset(presetId)
   const cw = w / SWARM_COLS
   const ch = h / SWARM_ROWS
   const flags = new Uint8Array(SWARM_COLS * SWARM_ROWS)
@@ -261,6 +442,22 @@ function swarmSpriteReady(frames: SwarmTokenFrames): boolean {
   return Boolean(frames.a && frames.a.naturalWidth > 0)
 }
 
+function loadImageWithFallback(primaryUrl: string, fallbackUrl: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const primary = new Image()
+    primary.decoding = 'async'
+    primary.onload = () => resolve(primary)
+    primary.onerror = () => {
+      const fallback = new Image()
+      fallback.decoding = 'async'
+      fallback.onload = () => resolve(fallback)
+      fallback.onerror = () => resolve(null)
+      fallback.src = fallbackUrl
+    }
+    primary.src = primaryUrl
+  })
+}
+
 function drawNormalContent(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -277,11 +474,16 @@ function drawNormalContent(
   scuteAtlas: ScuteAtlasPaint,
   scuteAtlasManifest: BeetleAtlasManifest | null,
   swarmFrames: SwarmTokenFrames,
+  leaderPresent: boolean,
+  bossSprite: HTMLImageElement | null,
+  minionA: HTMLImageElement | null,
+  minionB: HTMLImageElement | null,
 ) {
-  const inks = presetId === 'horde' ? HORDE_INK_SHADES : BUG_INK_SHADES
+  const inks = inkShadesForPreset(presetId)
   const variants = swarmGlyphVariants(presetId)
   const useTokenSprite = swarmSpriteReady(swarmFrames)
-  const panel = '#dfeedd'
+  const panel = panelColorForPreset(presetId)
+  const bossReady = Boolean(bossSprite && bossSprite.naturalWidth > 0)
 
   ctx.fillStyle = panel
   ctx.fillRect(0, 0, w, h)
@@ -295,6 +497,20 @@ function drawNormalContent(
   shadeRing.fill(255)
   for (let i = 0; i < n; i++) shadeRing[order[i]!] = i % 3
 
+  const krenkoBossCellIdx =
+    presetId === 'krenko' && leaderPresent && bossReady && n > 0 ? order[0]! : -1
+
+  const calmKrenkoNoBoss = presetId === 'krenko' && !leaderPresent
+  const birthRankByIdx =
+    calmKrenkoNoBoss && n > 0
+      ? (() => {
+          const ranks = new Int32Array(SWARM_COLS * SWARM_ROWS)
+          ranks.fill(-1)
+          for (let i = 0; i < n; i++) ranks[order[i]!] = i
+          return ranks
+        })()
+      : null
+
   const cw = w / SWARM_COLS
   const ch = h / SWARM_ROWS
   const motionK = swarmMotionAtten(n)
@@ -303,7 +519,12 @@ function drawNormalContent(
   const camY = h / 2 + panY
 
   const drift =
-    n > 1 ? swarmColonyDrift(timeMs, layoutSeed, cw, ch, reducedMotion) : { dx: 0, dy: 0 }
+    n > 1
+      ? swarmColonyDrift(timeMs, layoutSeed, cw, ch, reducedMotion)
+      : { dx: 0, dy: 0 }
+  const driftMul = calmKrenkoNoBoss && n > 1 ? 0.55 : 1
+  const driftDx = drift.dx * driftMul
+  const driftDy = drift.dy * driftMul
   const swarmLocalMotionMul = n > 1 ? 0.42 : 1
   const clusterSep = n > 1 ? clusterSeparationPx(flags, cw, ch) : new Map<number, { sx: number; sy: number }>()
 
@@ -314,16 +535,38 @@ function drawNormalContent(
 
   const t = timeMs * 0.001
   const twinPhase = reducedMotion ? 0 : Math.floor(timeMs / GLYPH_TWIN_MS) % 2
-  const twinPop = reducedMotion ? 1 : 1 + (twinPhase === 0 ? 0.06 : -0.032)
+  const visualPhase = calmKrenkoNoBoss ? 0 : twinPhase
+  const twinPop = reducedMotion || calmKrenkoNoBoss ? 1 : 1 + (twinPhase === 0 ? 0.06 : -0.032)
+  const isKrenkoOrbitMode = presetId === 'krenko' && leaderPresent && bossReady
 
-  if (n === 1) {
+  if (isKrenkoOrbitMode) {
+    const cx = Math.floor(SWARM_COLS / 2)
+    const cy = Math.floor(SWARM_ROWS / 2)
+    const cellCenterX = (cx + 0.5) * cw
+    const cellCenterY = (cy + 0.5) * ch
+    const lens = (Math.min(w, h) / zoomScale) * 0.62
+    const lensInk = inks[0]!
+    drawKrenkoOrbitSwarm(
+      ctx,
+      count,
+      timeMs,
+      reducedMotion,
+      cellCenterX,
+      cellCenterY,
+      lens / 2,
+      bossSprite!,
+      minionA,
+      minionB,
+      lensInk,
+    )
+  } else if (n === 1) {
     const cx = Math.floor(SWARM_COLS / 2)
     const cy = Math.floor(SWARM_ROWS / 2)
     const cellCenterX = (cx + 0.5) * cw
     const cellCenterY = (cy + 0.5) * ch
     const viBase =
       Math.floor(cell01(cx, cy, layoutSeed ^ 0x9e3779b1) * variants.length) % variants.length
-    const vi = (viBase + twinPhase) % variants.length
+    const vi = (viBase + visualPhase) % variants.length
     const lens = (Math.min(w, h) / zoomScale) * 0.62
     const lensInk = inks[0]!
     const beetleDebug = readBeetleDebugQuery()
@@ -354,9 +597,28 @@ function drawNormalContent(
       scuteAtlasManifest
     ) {
       drawBeetleAtlasDebugWireframe(ctx, scuteAtlasManifest, 0, 0, heroRadius)
+    } else if (presetId === 'krenko' && leaderPresent && bossReady && bossSprite) {
+      drawKrenkoCenterMob(
+        ctx,
+        count,
+        timeMs,
+        reducedMotion,
+        lens / 2,
+        bossSprite,
+        minionA,
+        minionB,
+        lensInk,
+      )
+    } else if (leaderPresent && bossReady && bossSprite) {
+      drawImageCentered(ctx, bossSprite, lens / 2)
     } else if (useTokenSprite) {
-      drawSwarmTokenSpriteCentered(ctx, swarmFrames, vi, lens / 2)
+      const tokenVariant = calmKrenkoNoBoss ? pickKrenkoMinionFrameVariant(0, swarmFrames) : vi
+      const flipX = calmKrenkoNoBoss ? krenkoMinionFlipX(0) : 1
+      ctx.scale(flipX, 1)
+      drawSwarmTokenSpriteCentered(ctx, swarmFrames, tokenVariant, lens / 2)
     } else {
+      const flipX = calmKrenkoNoBoss ? krenkoMinionFlipX(0) : 1
+      ctx.scale(flipX, 1)
       drawGlyph(ctx, variants[vi]!, -lens / 2, -lens / 2, lens, lensInk)
     }
     ctx.restore()
@@ -365,55 +627,69 @@ function drawNormalContent(
       for (let gx = 0; gx < SWARM_COLS; gx++) {
         const idx = gy * SWARM_COLS + gx
         if (!flags[idx]) continue
+        if (idx === krenkoBossCellIdx) continue
         const viBase =
           Math.floor(cell01(gx, gy, layoutSeed ^ 0x9e3779b1) * variants.length) % variants.length
-        const vi = (viBase + twinPhase) % variants.length
+        const vi = (viBase + visualPhase) % variants.length
         const glyphInk = inks[(shadeRing[idx] ?? 0) % 3]!
         const { ax, ay } = swarmedCellCenterPx(gx, gy, cw, ch)
-        const flipX = cell01(gx, gy, layoutSeed ^ 0x51ed81a1) < 0.5 ? -1 : 1
+        const birthRank = birthRankByIdx ? birthRankByIdx[idx]! : -1
+        const flipX = calmKrenkoNoBoss
+          ? krenkoMinionFlipX(birthRank)
+          : cell01(gx, gy, layoutSeed ^ 0x51ed81a1) < 0.5
+            ? -1
+            : 1
+        const calmMotionMul = calmKrenkoNoBoss ? 0.42 : 1
         const bobX = reducedMotion
           ? 0
           : Math.sin(t * 1.45 + gx * 0.71 + gy * 0.33) *
             cw *
             0.2 *
             motionK *
-            swarmLocalMotionMul
+            swarmLocalMotionMul *
+            calmMotionMul
         const bobY = reducedMotion
           ? 0
           : Math.cos(t * 1.28 + gx * 0.44 + gy * 0.91) *
             ch *
             0.2 *
             motionK *
-            swarmLocalMotionMul
+            swarmLocalMotionMul *
+            calmMotionMul
         const crawlX = reducedMotion
           ? 0
           : Math.sin(t * 0.38 + gx * 0.19 + gy * 0.27) *
             cw *
             0.12 *
             motionK *
-            swarmLocalMotionMul
+            swarmLocalMotionMul *
+            calmMotionMul
         const crawlY = reducedMotion
           ? 0
           : Math.cos(t * 0.33 + gx * 0.23 + gy * 0.31) *
             ch *
             0.12 *
             motionK *
-            swarmLocalMotionMul
+            swarmLocalMotionMul *
+            calmMotionMul
         const jitter = reducedMotion
           ? 0
-          : Math.sin(t * 2.2 + gx * gy * 0.02) * 0.04 * motionK * swarmLocalMotionMul
+          : Math.sin(t * 2.2 + gx * gy * 0.02) * 0.04 * motionK * swarmLocalMotionMul * calmMotionMul
         const glyphSize = swarmGlyphDrawSize(w, h, cw, ch, n)
         const sep = clusterSep.get(idx) ?? { sx: 0, sy: 0 }
         ctx.save()
         ctx.translate(
-          ax + sep.sx + drift.dx + bobX + crawlX,
-          ay + sep.sy + drift.dy + bobY + crawlY,
+          ax + sep.sx + driftDx + bobX + crawlX,
+          ay + sep.sy + driftDy + bobY + crawlY,
         )
+        ctx.scale(flipX, 1)
         ctx.rotate(jitter)
         ctx.scale(twinPop, twinPop)
-        ctx.scale(flipX, 1)
         if (useTokenSprite) {
-          drawSwarmTokenSpriteCentered(ctx, swarmFrames, vi, glyphSize / 2)
+          const tokenVariant = calmKrenkoNoBoss
+            ? pickKrenkoMinionFrameVariant(birthRank, swarmFrames)
+            : vi
+          drawSwarmTokenSpriteCentered(ctx, swarmFrames, tokenVariant, glyphSize / 2)
         } else {
           ctx.translate(-glyphSize / 2, -glyphSize / 2)
           drawGlyph(ctx, variants[vi]!, 0, 0, glyphSize, glyphInk)
@@ -435,8 +711,13 @@ function drawNormalContent(
     const elapsed = timeMs - pulseStartedAt
     if (elapsed <= PULSE_MS) {
       const u = elapsed / PULSE_MS
-      ctx.strokeStyle =
-        presetId === 'horde' ? 'rgba(42,107,102,0.38)' : 'rgba(31,74,40,0.38)'
+      const strokeColor =
+        presetId === 'horde'
+          ? 'rgba(42,107,102,0.38)'
+          : presetId === 'krenko'
+            ? 'rgba(95,48,52,0.38)'
+            : 'rgba(31,74,40,0.38)'
+      ctx.strokeStyle = strokeColor
       ctx.lineWidth = 3
       ctx.beginPath()
       ctx.arc(w / 2, h / 2, u * (Math.hypot(w, h) / 2), 0, Math.PI * 2)
@@ -454,6 +735,8 @@ export const PixelField = forwardRef<
     fieldMode: FieldMode
     reducedMotion: boolean
     zoomScale: number
+    /** Krenko track: boss is on the board (centered leader art + orbiting minion tokens). */
+    leaderPresent?: boolean
     onDyingComplete?: () => void
     onEmptyJokeComplete?: () => void
   }
@@ -465,6 +748,7 @@ export const PixelField = forwardRef<
     fieldMode,
     reducedMotion,
     zoomScale,
+    leaderPresent = false,
     onDyingComplete,
     onEmptyJokeComplete,
   },
@@ -473,6 +757,9 @@ export const PixelField = forwardRef<
   const [scuteAtlas, setScuteAtlas] = useState<ScuteAtlasPaint>({ kind: 'none' })
   const [scuteAtlasManifest, setScuteAtlasManifest] = useState<BeetleAtlasManifest | null>(null)
   const [swarmTokens, setSwarmTokens] = useState<Record<PresetId, SwarmTokenFrames> | null>(null)
+  const [krenkoBossSprite, setKrenkoBossSprite] = useState<HTMLImageElement | null>(null)
+  const [krenkoMinionA, setKrenkoMinionA] = useState<HTMLImageElement | null>(null)
+  const [krenkoMinionB, setKrenkoMinionB] = useState<HTMLImageElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -515,9 +802,31 @@ export const PixelField = forwardRef<
     }
   }, [presetId])
 
+  useEffect(() => {
+    if (presetId !== 'krenko') {
+      setKrenkoBossSprite(null)
+      setKrenkoMinionA(null)
+      setKrenkoMinionB(null)
+      return
+    }
+    let cancelled = false
+    Promise.all([
+      loadImageWithFallback(KRENKO_ASSET_URLS.boss, KRENKO_ASSET_FALLBACK_URLS.boss),
+      loadImageWithFallback(KRENKO_ASSET_URLS.minionA, KRENKO_ASSET_FALLBACK_URLS.minionA),
+      loadImageWithFallback(KRENKO_ASSET_URLS.minionB, KRENKO_ASSET_FALLBACK_URLS.minionB),
+    ]).then(([boss, minionAImage, minionBImage]) => {
+      if (cancelled) return
+      setKrenkoBossSprite(boss)
+      setKrenkoMinionA(minionAImage)
+      setKrenkoMinionB(minionBImage)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [presetId])
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
-  const jokeRafRef = useRef(0)
   const panRef = useRef({ x: 0, y: 0 })
   const zoomScaleRef = useRef(zoomScale)
   const dragRef = useRef<{ id: number | null; lx: number; ly: number }>({
@@ -666,6 +975,10 @@ export const PixelField = forwardRef<
         scuteAtlas,
         scuteAtlasManifest,
         swarmTokens?.[presetId] ?? { a: null, b: null },
+        leaderPresent,
+        presetId === 'krenko' ? krenkoBossSprite : null,
+        presetId === 'krenko' ? krenkoMinionA : null,
+        presetId === 'krenko' ? krenkoMinionB : null,
       )
     }
 
@@ -700,6 +1013,10 @@ export const PixelField = forwardRef<
     scuteAtlas,
     scuteAtlasManifest,
     swarmTokens,
+    leaderPresent,
+    krenkoBossSprite,
+    krenkoMinionA,
+    krenkoMinionB,
   ])
 
   /** Dying animation */
@@ -738,7 +1055,7 @@ export const PixelField = forwardRef<
       const t = (performance.now() - start) / dur
       const cw = ww / SWARM_COLS
       const ch = hh / SWARM_ROWS
-      const panel = '#dfeedd'
+      const panel = panelColorForPreset(presetId)
       ctx.fillStyle = panel
       ctx.fillRect(0, 0, ww, hh)
       const nPart = Math.max(1, particlesRef.current.length)
@@ -781,41 +1098,21 @@ export const PixelField = forwardRef<
     }
     const canvas = canvasRef.current
     if (!canvas) return
-    const bugInk = '#1f4a28'
-    const hordeInk = '#2a6b66'
-    const glyphInk = presetId === 'horde' ? hordeInk : bugInk
-    const start = performance.now()
-    const loop = () => {
-      const c = canvasRef.current
-      if (!c) return
-      const ctx = c.getContext('2d')
-      if (!ctx) return
-      const w = c.clientWidth
-      const h = c.clientHeight
-      if (w < 8 || h < 8) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (w >= 8 && h >= 8) {
       const dpr = Math.min(2, window.devicePixelRatio || 1)
-      c.width = Math.floor(w * dpr)
-      c.height = Math.floor(h * dpr)
+      canvas.width = Math.floor(w * dpr)
+      canvas.height = Math.floor(h * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      const panel = '#dfeedd'
+      const panel = panelColorForPreset(presetId)
       ctx.fillStyle = panel
       ctx.fillRect(0, 0, w, h)
-      const blink = Math.sin((performance.now() - start) / 260) > 0
-      if (blink) {
-        ctx.fillStyle = glyphInk
-        ctx.font = `${Math.min(w, h) * 0.12}px ui-monospace, monospace`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText('· · ·', w / 2, h / 2)
-      }
-      if (performance.now() - start < 920) {
-        jokeRafRef.current = requestAnimationFrame(loop)
-      } else {
-        onEmptyJokeComplete?.()
-      }
     }
-    jokeRafRef.current = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(jokeRafRef.current)
+    const t = window.setTimeout(() => onEmptyJokeComplete?.(), 700)
+    return () => clearTimeout(t)
   }, [fieldMode, reducedMotion, presetId, onEmptyJokeComplete])
 
   const pannable = fieldMode === 'normal' && zoomScale > 1.02

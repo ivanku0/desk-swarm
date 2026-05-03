@@ -7,7 +7,9 @@ export const SWARM_ROWS = 36
 export const SWARM_MAX_CELLS = SWARM_COLS * SWARM_ROWS
 
 export function layoutSeedForPreset(presetId: PresetId): number {
-  return presetId === 'horde' ? 0x7a11e419 : 0x5c075c01
+  if (presetId === 'horde') return 0x7a11e419
+  if (presetId === 'krenko') return 0x4b3e20a7
+  return 0x5c075c01
 }
 
 const CARDINAL_OFFSETS: readonly [number, number][] = [

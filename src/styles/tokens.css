@@ -22,3 +22,9 @@
 .preset-horde {
   --accent-positive: var(--accent-alt);
 }
+
+.preset-krenko {
+  --accent-positive: #6e3a3e;
+  --accent-alt: #7f4a4e;
+  --focus-ring: #4a282c;
+}

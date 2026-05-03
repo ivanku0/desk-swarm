@@ -4,7 +4,7 @@
  * **`src/viz/swarmGlyphs/<id>.ts`** (bitmask fallback), URLs in **`src/viz/swarmTokenSprite.ts`**,
  * and **`scripts/ref-to-glyphs.mjs`** (`PRESET_CONFIG`) if you use the 8×8 generator.
  */
-export type PresetId = 'scute' | 'horde'
+export type PresetId = 'scute' | 'horde' | 'krenko'
 
 export interface PresetDefinition {
   id: PresetId

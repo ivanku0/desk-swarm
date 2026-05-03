@@ -15,6 +15,13 @@ export const PRESETS: readonly PresetDefinition[] = [
     growLabel: 'HORDE UP!',
     themeClass: 'preset-horde',
   },
+  {
+    id: 'krenko',
+    cardName: 'Krenko, Mob Boss',
+    meterTitle: 'GOBLIN COUNT',
+    growLabel: 'KRENK IT',
+    themeClass: 'preset-krenko',
+  },
 ] as const
 
 export function getPreset(id: PresetId): PresetDefinition {

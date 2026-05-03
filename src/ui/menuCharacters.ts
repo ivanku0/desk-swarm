@@ -1,7 +1,7 @@
 import { getCardBundle } from '../data/cardData'
 import type { PresetId } from '../presets/types'
 
-export type MenuSlideId = 'scute' | 'horde' | 'coming-soon'
+export type MenuSlideId = 'scute' | 'horde' | 'krenko' | 'coming-soon'
 
 export interface MenuSlide {
   id: MenuSlideId
@@ -17,7 +17,7 @@ export interface MenuSlide {
   /** Shown on the CTA (disabled when presetId is null) */
   ctaLabel: string
   /** BEM suffix for tile theming */
-  tileVariant: 'scute' | 'horde' | 'soon'
+  tileVariant: 'scute' | 'horde' | 'krenko' | 'soon'
   /** Optional top-band creature sprite (pixel art). */
   swatchSpriteSrc?: string
 }
@@ -43,9 +43,21 @@ export const MENU_SLIDES: readonly MenuSlide[] = [
     oracleText: getCardBundle('horde').oracleText,
     flavorText: getCardBundle('horde').flavorText,
     presetId: 'horde',
-    ctaLabel: 'Go horde',
+    ctaLabel: 'go horde',
     tileVariant: 'horde',
     swatchSpriteSrc: '/art/horde/token-ref.png',
+  },
+  {
+    id: 'krenko',
+    cardName: getCardBundle('krenko').cardName,
+    typeLine: getCardBundle('krenko').typeLine,
+    ptLine: getCardBundle('krenko').powerToughness,
+    oracleText: getCardBundle('krenko').oracleText,
+    flavorText: getCardBundle('krenko').flavorText,
+    presetId: 'krenko',
+    ctaLabel: "get gobblin'",
+    tileVariant: 'krenko',
+    swatchSpriteSrc: '/art/krenko/leader-ref.png',
   },
   {
     id: 'coming-soon',
