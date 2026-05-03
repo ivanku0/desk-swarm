@@ -13,6 +13,7 @@
     "glyphs:demo-scute": "node scripts/bootstrap-demo-token-ref.mjs && node scripts/ref-to-glyphs.mjs scute"
   },
   "dependencies": {
+    "lucide-react": "^0.544.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
@@ -26,6 +27,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "sharp": "^0.34.5",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
