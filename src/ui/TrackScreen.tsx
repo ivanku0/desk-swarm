@@ -451,25 +451,29 @@ export function TrackScreen({
               {deltaFlash.text}
             </span>
           ) : null}
-          <button
-            type="button"
-            className={`grow-btn${growCharged ? ' grow-btn--charged' : ''}${growBurst ? ' grow-btn--burst' : ''}`}
-            disabled={krenkGrowDisabled}
-            aria-label={presetId === 'krenko' && !krenkoPresent ? 'Cast Krenko onto the board' : undefined}
-            onClick={doGrow}
-            onAnimationEnd={(e) => {
-              if (e.animationName === 'grow-btn-burst') setGrowBurst(false)
-            }}
+          <span
+            className={`grow-btn-slot${scuteExpReady ? ' grow-btn-slot--scute-warn' : ''}`}
           >
-            <span className="grow-btn__title">
-              {presetId === 'krenko' ? (krenkoPresent ? preset.growLabel : 'CAST KRENKO') : preset.growLabel}
-            </span>
-            {scuteExpReady || krenkReady ? (
-              <span className="grow-btn__subtitle" aria-hidden>
-                next: ×2
+            <button
+              type="button"
+              className={`grow-btn${growCharged ? ' grow-btn--charged' : ''}${growBurst ? ' grow-btn--burst' : ''}`}
+              disabled={krenkGrowDisabled}
+              aria-label={presetId === 'krenko' && !krenkoPresent ? 'Cast Krenko onto the board' : undefined}
+              onClick={doGrow}
+              onAnimationEnd={(e) => {
+                if (e.animationName === 'grow-btn-burst') setGrowBurst(false)
+              }}
+            >
+              <span className="grow-btn__title">
+                {presetId === 'krenko' ? (krenkoPresent ? preset.growLabel : 'CAST KRENKO') : preset.growLabel}
               </span>
-            ) : null}
-          </button>
+              {scuteExpReady || krenkReady ? (
+                <span className="grow-btn__subtitle" aria-hidden>
+                  next: ×2
+                </span>
+              ) : null}
+            </button>
+          </span>
         </div>
         <div className="micro-pair" role="group" aria-label="Add or remove one from the count">
           <div className="micro-pair__btns">
