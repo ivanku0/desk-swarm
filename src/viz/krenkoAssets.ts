@@ -1,6 +1,8 @@
 /** Centralized Krenko sprite paths so art swaps do not require code edits elsewhere. */
 export const KRENKO_ASSET_URLS = {
   boss: '/art/krenko/krenko-boss.png',
+  /** Optional: face-only or bust for board-wipe death spin (falls back to live boss if missing). */
+  bossDeath: '/art/krenko/krenko-boss-death.png',
   minionA: '/art/krenko/krenko-minion-a.png',
   minionB: '/art/krenko/krenko-minion-b.png',
 } as const

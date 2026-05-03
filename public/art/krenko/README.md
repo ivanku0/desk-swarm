@@ -3,6 +3,7 @@
 Drop your final pixel art files in this folder using these exact names:
 
 - `krenko-boss.png` - centered Krenko sprite
+- `krenko-boss-death.png` - optional face / bust used only during board-wipe death spin (if missing, live boss art is used)
 - `krenko-minion-a.png` - small goblin sprite variant A
 - `krenko-minion-b.png` - small goblin sprite variant B
 

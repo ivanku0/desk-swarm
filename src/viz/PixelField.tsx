@@ -458,6 +458,42 @@ function loadImageWithFallback(primaryUrl: string, fallbackUrl: string): Promise
   })
 }
 
+/** Load optional art (no fallback file); resolves null on 404. */
+function loadImageOptional(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.decoding = 'async'
+    img.onload = () => resolve(img)
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+}
+
+/** Board wipe: Krenko at orbit-scale, centered, fast spin + optional death-face sprite. */
+function drawKrenkoWipeBossOverlay(
+  ctx: CanvasRenderingContext2D,
+  ww: number,
+  hh: number,
+  zoomScale: number,
+  t: number,
+  bossSprite: HTMLImageElement,
+  deathSprite: HTMLImageElement | null,
+) {
+  if (!bossSprite.naturalWidth) return
+  const face = deathSprite && deathSprite.naturalWidth > 0 ? deathSprite : bossSprite
+  const zs = Math.max(zoomScale, 0.02)
+  const bossHalf = (Math.min(ww, hh) / zs) * 0.62 * 0.5
+  const spin = t * Math.PI * 5
+  const wobble = Math.sin(t * Math.PI * 16) * 4 * (1 - t * 0.85)
+  const alpha = Math.min(1, 0.22 + (1 - t) ** 0.82)
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.translate(ww / 2 + wobble, hh / 2)
+  ctx.rotate(spin)
+  drawImageCentered(ctx, face, bossHalf)
+  ctx.restore()
+}
+
 function drawNormalContent(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -758,6 +794,7 @@ export const PixelField = forwardRef<
   const [scuteAtlasManifest, setScuteAtlasManifest] = useState<BeetleAtlasManifest | null>(null)
   const [swarmTokens, setSwarmTokens] = useState<Record<PresetId, SwarmTokenFrames> | null>(null)
   const [krenkoBossSprite, setKrenkoBossSprite] = useState<HTMLImageElement | null>(null)
+  const [krenkoBossDeathSprite, setKrenkoBossDeathSprite] = useState<HTMLImageElement | null>(null)
   const [krenkoMinionA, setKrenkoMinionA] = useState<HTMLImageElement | null>(null)
   const [krenkoMinionB, setKrenkoMinionB] = useState<HTMLImageElement | null>(null)
 
@@ -805,6 +842,7 @@ export const PixelField = forwardRef<
   useEffect(() => {
     if (presetId !== 'krenko') {
       setKrenkoBossSprite(null)
+      setKrenkoBossDeathSprite(null)
       setKrenkoMinionA(null)
       setKrenkoMinionB(null)
       return
@@ -814,11 +852,13 @@ export const PixelField = forwardRef<
       loadImageWithFallback(KRENKO_ASSET_URLS.boss, KRENKO_ASSET_FALLBACK_URLS.boss),
       loadImageWithFallback(KRENKO_ASSET_URLS.minionA, KRENKO_ASSET_FALLBACK_URLS.minionA),
       loadImageWithFallback(KRENKO_ASSET_URLS.minionB, KRENKO_ASSET_FALLBACK_URLS.minionB),
-    ]).then(([boss, minionAImage, minionBImage]) => {
+      loadImageOptional(KRENKO_ASSET_URLS.bossDeath),
+    ]).then(([boss, minionAImage, minionBImage, deathFace]) => {
       if (cancelled) return
       setKrenkoBossSprite(boss)
       setKrenkoMinionA(minionAImage)
       setKrenkoMinionB(minionBImage)
+      setKrenkoBossDeathSprite(deathFace)
     })
     return () => {
       cancelled = true
@@ -1078,6 +1118,9 @@ export const PixelField = forwardRef<
         }
         ctx.restore()
       }
+      if (presetId === 'krenko' && leaderPresent && krenkoBossSprite?.naturalWidth) {
+        drawKrenkoWipeBossOverlay(ctx, ww, hh, zoomScale, t, krenkoBossSprite, krenkoBossDeathSprite)
+      }
       if (t < 1) {
         deathRaf = requestAnimationFrame(tick)
       } else {
@@ -1087,7 +1130,18 @@ export const PixelField = forwardRef<
     }
     deathRaf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(deathRaf)
-  }, [fieldMode, reducedMotion, count, presetId, onDyingComplete, swarmTokens])
+  }, [
+    fieldMode,
+    reducedMotion,
+    count,
+    presetId,
+    leaderPresent,
+    zoomScale,
+    krenkoBossSprite,
+    krenkoBossDeathSprite,
+    onDyingComplete,
+    swarmTokens,
+  ])
 
   /** Empty joke blink */
   useEffect(() => {
