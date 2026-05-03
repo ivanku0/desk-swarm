@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "grid": 24,
+  "texture": "/art/scute/beetle.png",
+  "parts": [
+    {
+      "id": "shell",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 18,
+      "pivotU": 0.5,
+      "pivotV": 0.85
+    },
+    {
+      "id": "horn",
+      "x": 8,
+      "y": 18,
+      "w": 8,
+      "h": 12,
+      "pivotU": 0.5,
+      "pivotV": 1
+    },
+    {
+      "id": "head",
+      "x": 0,
+      "y": 18,
+      "w": 16,
+      "h": 10,
+      "pivotU": 0.5,
+      "pivotV": 0.8
+    },
+    {
+      "id": "eye_glow",
+      "x": 16,
+      "y": 18,
+      "w": 6,
+      "h": 4,
+      "pivotU": 0.5,
+      "pivotV": 0.5
+    },
+    {
+      "id": "leg_fl_upper",
+      "x": 0,
+      "y": 28,
+      "w": 6,
+      "h": 8,
+      "pivotU": 0.2,
+      "pivotV": 0.15
+    },
+    {
+      "id": "leg_fl_lower",
+      "x": 6,
+      "y": 28,
+      "w": 6,
+      "h": 8,
+      "pivotU": 0.5,
+      "pivotV": 0.1
+    }
+  ]
+}
