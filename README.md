@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Swarm desk
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Math is for blockers.** A small, installable web app for tracking **niche Commander-scale creature counts** when the board is really a pile of identical tokens (think **Scute Swarm** or **Homunculus Horde**) and you want a fast counter at the table without spreadsheets or dice gymnastics.
 
-Currently, two official plugins are available:
+This is a **casual toy**, not a rules engine: it encodes a few house-friendly behaviors so the number line matches how many bugs or homunculi you care about in the moment.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Why this exists
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Lightweight:** runs in the browser, offline-friendly as a PWA-style shell (`manifest.webmanifest`, mobile-first layout).
+- **Focused:** built around presets for specific cards, not every token in Magic.
+- **Readable at a glance:** big numeric display, optional zoom on the pixel “swarm” field, and a simple control strip for the flows you actually use in play.
 
-## Expanding the ESLint configuration
+If you only ever need “how many Scutes” or “how big is the Horde,” this is the intent.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## What’s in the app today
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Presets:** **Scute Swarm** (`2G`) and **Homunculus Horde** (`3U`), with oracle text and Gatherer rulings pulled from **Scryfall** for accuracy in the info UI.
+- **Counter model:** `BigInt`-backed count, **undo**, and preset-specific “grow” behavior (house rules for how doubling / reset-at-zero works at the table).
+- **Swarm field:** canvas **pixel glyphs** (bugs vs goblins), **cardinal proliferation** growth order for both presets so the colony feels clumped rather than ring-shaped, shared **drift** motion, and **zoom** that eases from a single creature up through the first few hundred tokens before matching the global curve.
+- **Main menu:** carousel of pantone-style “cards,” flavor lines, plain-text mana in the corner, **recent stats** drawer, and CTAs per preset.
+- **Info sheet:** card-like layout with tabs for **Oracle text**, **Rules** (links + rulings), and **Tips** (how the app buttons behave).
+- **Tests:** Vitest coverage for layout math, zoom scaling, and core model behavior.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Tech stack
+
+- **React 19** + **TypeScript**
+- **Vite** for dev and production builds
+- **Vitest** for unit tests
+
+---
+
+## Scripts
+
+```bash
+npm install
+npm run dev      # local dev server
+npm run build    # typecheck + production bundle
+npm run test     # vitest
+npm run preview  # serve the production build locally
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Disclaimer
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Magic: The Gathering is a trademark of Wizards of the Coast. This project is an independent fan tool and is **not affiliated with** or endorsed by Wizards. Oracle text and rulings are attributed in-app via Scryfall; use official sources at the table when it matters.
+
+---
+
+## License
+
+Private / personal project unless you add an explicit `LICENSE` file.
