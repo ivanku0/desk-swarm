@@ -47,17 +47,65 @@ function swarmGlyphDrawSize(w: number, h: number, cw: number, ch: number, n: num
   return Math.min(vmin * 0.48, Math.max(cellBound, headroom))
 }
 
-/** Push occupied cells slightly away from board center so small swarms breathe. */
-const SWARM_POSITION_SPREAD = 1.17
+/** Aggressive radial spread so token separation is unmistakable at medium counts. */
+const SWARM_POSITION_SPREAD = 2.75
+const SWARM_SPREAD_X_BIAS = 1.7
+const SWARM_SPREAD_Y_BIAS = 1.0
 
 function swarmedCellCenterPx(gx: number, gy: number, cw: number, ch: number): { ax: number; ay: number } {
   const boardCx = (SWARM_COLS / 2) * cw
   const boardCy = (SWARM_ROWS / 2) * ch
   const cellCx = (gx + 0.5) * cw
   const cellCy = (gy + 0.5) * ch
-  const ax = boardCx + (cellCx - boardCx) * SWARM_POSITION_SPREAD
-  const ay = boardCy + (cellCy - boardCy) * SWARM_POSITION_SPREAD
+  const ax = boardCx + (cellCx - boardCx) * SWARM_POSITION_SPREAD * SWARM_SPREAD_X_BIAS
+  const ay = boardCy + (cellCy - boardCy) * SWARM_POSITION_SPREAD * SWARM_SPREAD_Y_BIAS
   return { ax, ay }
+}
+
+/**
+ * Radial push away from the **cluster centroid** (in px) so cardinal-adjacent
+ * tokens do not stack into one blob when draw size is large.
+ */
+function clusterSeparationPx(
+  flags: Uint8Array,
+  cw: number,
+  ch: number,
+): Map<number, { sx: number; sy: number }> {
+  const out = new Map<number, { sx: number; sy: number }>()
+  const cells: { idx: number; ax: number; ay: number }[] = []
+  for (let gy = 0; gy < SWARM_ROWS; gy++) {
+    for (let gx = 0; gx < SWARM_COLS; gx++) {
+      const idx = gy * SWARM_COLS + gx
+      if (!flags[idx]) continue
+      const { ax, ay } = swarmedCellCenterPx(gx, gy, cw, ch)
+      cells.push({ idx, ax, ay })
+    }
+  }
+  const na = cells.length
+  if (na <= 1) return out
+  let mx = 0
+  let my = 0
+  for (const c of cells) {
+    mx += c.ax
+    my += c.ay
+  }
+  mx /= na
+  my /= na
+  const slot = Math.min(cw, ch)
+  const sepMag = slot * (1.8 / Math.pow(na, 0.15))
+  const sepXBias = 1.65
+  const sepYBias = 1.0
+  for (const c of cells) {
+    const dx = (c.ax - mx) * sepXBias
+    const dy = (c.ay - my) * sepYBias
+    const d = Math.hypot(dx, dy)
+    if (d < 0.5) {
+      out.set(c.idx, { sx: 0, sy: 0 })
+      continue
+    }
+    out.set(c.idx, { sx: (dx / d) * sepMag, sy: (dy / d) * sepMag })
+  }
+  return out
 }
 
 function swarmMotionAtten(n: number): number {
@@ -155,6 +203,9 @@ function buildParticles(
   const inks = presetId === 'horde' ? HORDE_INK_SHADES : BUG_INK_SHADES
   const cw = w / SWARM_COLS
   const ch = h / SWARM_ROWS
+  const flags = new Uint8Array(SWARM_COLS * SWARM_ROWS)
+  fillSwarmActiveFlags(flags, order, n)
+  const clusterSep = n > 1 ? clusterSeparationPx(flags, cw, ch) : new Map<number, { sx: number; sy: number }>()
   const list: Particle[] = []
   for (let i = 0; i < n; i++) {
     const idx = order[i]!
@@ -162,10 +213,11 @@ function buildParticles(
     const gy = Math.floor(idx / SWARM_COLS)
     const rng = mulberry32((gx << 16) ^ gy ^ layoutSeed)
     const { ax, ay } = swarmedCellCenterPx(gx, gy, cw, ch)
+    const sep = clusterSep.get(idx) ?? { sx: 0, sy: 0 }
     const flipX = cell01(gx, gy, layoutSeed ^ 0x51ed81a1) < 0.5 ? -1 : 1
     list.push({
-      x: ax,
-      y: ay,
+      x: ax + sep.sx,
+      y: ay + sep.sy,
       vx: (rng() - 0.5) * 14,
       vy: (rng() - 0.5) * 14 - 4,
       rot: 0,
@@ -253,6 +305,7 @@ function drawNormalContent(
   const drift =
     n > 1 ? swarmColonyDrift(timeMs, layoutSeed, cw, ch, reducedMotion) : { dx: 0, dy: 0 }
   const swarmLocalMotionMul = n > 1 ? 0.42 : 1
+  const clusterSep = n > 1 ? clusterSeparationPx(flags, cw, ch) : new Map<number, { sx: number; sy: number }>()
 
   ctx.save()
   ctx.translate(w / 2, h / 2)
@@ -350,8 +403,12 @@ function drawNormalContent(
           ? 0
           : Math.sin(t * 2.2 + gx * gy * 0.02) * 0.04 * motionK * swarmLocalMotionMul
         const glyphSize = swarmGlyphDrawSize(w, h, cw, ch, n)
+        const sep = clusterSep.get(idx) ?? { sx: 0, sy: 0 }
         ctx.save()
-        ctx.translate(ax + drift.dx + bobX + crawlX, ay + drift.dy + bobY + crawlY)
+        ctx.translate(
+          ax + sep.sx + drift.dx + bobX + crawlX,
+          ay + sep.sy + drift.dy + bobY + crawlY,
+        )
         ctx.rotate(jitter)
         ctx.scale(twinPop, twinPop)
         ctx.scale(flipX, 1)
