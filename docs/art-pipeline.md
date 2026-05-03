@@ -14,6 +14,17 @@ Optional **higher-res, part-mapped** horned beetle for Scute (hero / zoom / menu
 
 Stay **pixel-aligned** (integer scales, `imageSmoothingEnabled = false`).
 
+## Raster reference → swarm glyphs (8×8)
+
+The **dense swarm** still draws **`Bitmap8` glyphs** (fast). To make those bugs **look like your beetle reference** instead of the default shapes:
+
+1. Save a PNG as **`public/art/scute/beetle-ref.png`** (photo, card art crop, or line art — square-ish works best; transparency is OK).
+2. Run **`npm run beetle:glyphs`**.  
+   This trims empty margins, resizes to **8×8**, thresholds luminance into ink, and writes **`src/viz/scuteBeetleGlyphsFromRef.ts`** (two thresholds → two variants for the existing twin-phase swap).
+3. Tweak thresholds in **`scripts/beetle-ref-to-glyphs.mjs`** or **hand-edit** the generated `0`/`1` grid if a horn or leg needs nudging.
+
+That path is separate from **`beetle.png` + `atlas.json`**, which is for the **optional higher-res hero** (sliced parts), not the tiny field glyphs.
+
 ## Files
 
 - **`src/viz/beetleAtlas.types.ts`** — TypeScript manifest + part IDs.

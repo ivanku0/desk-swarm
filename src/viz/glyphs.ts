@@ -1,28 +1,10 @@
+import { SCUTE_BUG_REF_GLYPHS } from './scuteBeetleGlyphsFromRef'
+
 /** 8×8 pixel patterns, 1 = ink */
 export type Bitmap8 = readonly (readonly number[])[]
 
-export const BUG_VARIANTS: readonly Bitmap8[] = [
-  [
-    [0, 0, 1, 1, 1, 1, 0, 0],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [1, 1, 0, 1, 1, 0, 1, 1],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [0, 1, 0, 1, 1, 0, 1, 0],
-    [0, 1, 1, 0, 0, 1, 1, 0],
-    [0, 0, 1, 1, 1, 1, 0, 0],
-    [0, 1, 0, 0, 0, 0, 1, 0],
-  ],
-  [
-    [0, 1, 1, 0, 0, 1, 1, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 1, 0, 1, 1, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 1, 0, 0, 1, 0, 0],
-    [0, 1, 1, 1, 1, 1, 1, 0],
-    [0, 1, 0, 0, 0, 0, 1, 0],
-    [0, 0, 1, 0, 0, 1, 0, 0],
-  ],
-] as const
+/** Scute field bugs — from `scuteBeetleGlyphsFromRef.ts` (see `npm run beetle:glyphs`). */
+export const BUG_VARIANTS: readonly Bitmap8[] = SCUTE_BUG_REF_GLYPHS
 
 export const GOBLIN_VARIANTS: readonly Bitmap8[] = [
   [
