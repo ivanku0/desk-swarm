@@ -1144,7 +1144,7 @@ button.hero-panel--meter:focus-visible {
   box-shadow: 0 2px 0 color-mix(in srgb, var(--border-strong) 52%, #000);
 }
 
-/* Wraps grow CTA so Scute @6 can show a perimeter trace without clipping */
+/* Wraps grow CTA; Scute @6 uses fill shimmer (no border trace) */
 .grow-btn-slot {
   flex: 1 1 0;
   min-width: 0;
@@ -1153,67 +1153,6 @@ button.hero-panel--meter:focus-visible {
   display: flex;
   flex-direction: column;
   position: relative;
-}
-
-.grow-btn-slot > .grow-btn {
-  position: relative;
-  z-index: 1;
-}
-
-/* Rotating highlight ring — next grow doubles (6 → 7) */
-.grow-btn-slot--scute-warn::before {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  z-index: 0;
-  border-radius: 9px;
-  padding: 3px;
-  pointer-events: none;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0 72%,
-    rgba(255, 248, 200, 0.15) 78%,
-    rgba(255, 236, 140, 0.95) 86%,
-    #fffef0 90%,
-    rgba(255, 236, 140, 0.95) 94%,
-    rgba(255, 248, 200, 0.2) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: grow-btn-scute-trace-spin 1.15s linear infinite;
-}
-
-@keyframes grow-btn-scute-trace-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.track-screen--reduce-motion .grow-btn-slot--scute-warn::before {
-  animation: none;
-  transform: none;
-  opacity: 0.92;
-  background: conic-gradient(
-    rgba(255, 236, 160, 0.75) 0,
-    rgba(255, 210, 90, 0.55) 40%,
-    rgba(255, 236, 160, 0.75) 100%
-  );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .grow-btn-slot--scute-warn::before {
-    animation: none;
-    transform: none;
-    opacity: 0.92;
-    background: conic-gradient(
-      rgba(255, 236, 160, 0.75) 0,
-      rgba(255, 210, 90, 0.55) 40%,
-      rgba(255, 236, 160, 0.75) 100%
-    );
-  }
 }
 
 .grow-btn {
@@ -1260,8 +1199,62 @@ button.hero-panel--meter:focus-visible {
   animation: grow-btn-charged-glow 1.15s ease-in-out infinite;
 }
 
+/* Next tap doubles (6 → 7): soft highlight sweeps across the button fill */
 .grow-btn-slot--scute-warn .grow-btn--charged {
-  animation-duration: 0.72s;
+  overflow: hidden;
+  background-color: var(--accent-positive);
+  background-image: linear-gradient(
+    118deg,
+    var(--accent-positive) 0%,
+    color-mix(in srgb, var(--accent-positive) 50%, #f2fff0) 26%,
+    color-mix(in srgb, var(--accent-positive) 38%, #fff4c4) 50%,
+    color-mix(in srgb, var(--accent-positive) 50%, #f2fff0) 74%,
+    var(--accent-positive) 100%
+  );
+  background-size: 260% 260%;
+  animation:
+    grow-btn-charged-glow 0.72s ease-in-out infinite,
+    grow-btn-scute-fill-wave 2.8s ease-in-out infinite;
+}
+
+@keyframes grow-btn-scute-fill-wave {
+  0%,
+  100% {
+    background-position: 8% 50%;
+  }
+  50% {
+    background-position: 92% 50%;
+  }
+}
+
+.track-screen--reduce-motion .grow-btn-slot--scute-warn .grow-btn--charged {
+  animation: none;
+  background-size: 100% 100%;
+  background-image: linear-gradient(
+    118deg,
+    var(--accent-positive) 0%,
+    color-mix(in srgb, var(--accent-positive) 58%, #f4fff0) 52%,
+    var(--accent-positive) 100%
+  );
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
+    0 0 0 2px color-mix(in srgb, var(--accent-positive) 42%, rgba(255, 255, 255, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grow-btn-slot--scute-warn .grow-btn--charged {
+    animation: none;
+    background-size: 100% 100%;
+    background-image: linear-gradient(
+      118deg,
+      var(--accent-positive) 0%,
+      color-mix(in srgb, var(--accent-positive) 58%, #f4fff0) 52%,
+      var(--accent-positive) 100%
+    );
+    box-shadow:
+      0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
+      0 0 0 2px color-mix(in srgb, var(--accent-positive) 42%, rgba(255, 255, 255, 0.35));
+  }
 }
 
 @keyframes grow-btn-charged-glow {
