@@ -28,10 +28,26 @@ import {
   type SwarmTokenFrames,
 } from './swarmTokenSprite'
 
-/** Extra scale for small swarms — capped low so neighbors do not stack on each other. */
+/** Extra scale for dense swarms — keeps cell-sized glyphs from overlapping when n is large. */
 function swarmGlyphSizeMul(n: number): number {
   if (n <= 1) return 1
   return Math.min(1.72, 1 + 3.1 / Math.sqrt(n))
+}
+
+/**
+ * World-space draw size for one token (sprite or 8×8 grid scaled to `glyphSize`).
+ * For small counts, size comes from the **viewport** so a few scutes fill the board;
+ * for larger swarms, size stays tied to the **grid cell** so more fit on screen.
+ */
+function swarmGlyphDrawSize(w: number, h: number, cw: number, ch: number, n: number): number {
+  const cellSlot = Math.min(cw, ch) * 0.68
+  const cellBound = cellSlot * swarmGlyphSizeMul(n)
+  if (n <= 8) {
+    const vmin = Math.min(w, h)
+    const target = (vmin * 0.52) / Math.sqrt(n)
+    return Math.min(vmin * 0.48, Math.max(cellBound, target))
+  }
+  return cellBound
 }
 
 function swarmMotionAtten(n: number): number {
@@ -214,8 +230,6 @@ function drawNormalContent(
 
   const cw = w / SWARM_COLS
   const ch = h / SWARM_ROWS
-  const baseGlyph = Math.min(cw, ch) * 0.68
-  const sizeMul = swarmGlyphSizeMul(n)
   const motionK = swarmMotionAtten(n)
 
   const camX = w / 2 + panX
@@ -320,7 +334,7 @@ function drawNormalContent(
         const jitter = reducedMotion
           ? 0
           : Math.sin(t * 3.3 + gx * gy * 0.02) * 0.04 * motionK * swarmLocalMotionMul
-        const glyphSize = baseGlyph * sizeMul
+        const glyphSize = swarmGlyphDrawSize(w, h, cw, ch, n)
         ctx.save()
         ctx.translate(
           baseX + drift.dx + bobX + crawlX + glyphSize / 2,
@@ -657,13 +671,14 @@ export const PixelField = forwardRef<
       const panel = '#dfeedd'
       ctx.fillStyle = panel
       ctx.fillRect(0, 0, ww, hh)
+      const nPart = Math.max(1, particlesRef.current.length)
+      const splat = swarmGlyphDrawSize(ww, hh, cw, ch, nPart)
       for (const pt of particlesRef.current) {
         pt.x += pt.vx * 0.35
         pt.y += pt.vy * 0.35
         pt.rot += pt.vrot
         pt.life = Math.max(0, 1 - t * 1.15)
         const bmp = variants[pt.variant % variants.length]!
-        const splat = Math.min(cw, ch) * 0.7
         ctx.save()
         ctx.translate(pt.x, pt.y)
         ctx.rotate(pt.rot)
@@ -671,7 +686,7 @@ export const PixelField = forwardRef<
         if (useTok) {
           drawSwarmTokenSpriteCentered(ctx, tokenFrames, pt.variant, splat / 2)
         } else {
-          drawGlyph(ctx, bmp, -cw * 0.35, -ch * 0.35, splat, pt.ink)
+          drawGlyph(ctx, bmp, -splat * 0.35, -splat * 0.35, splat, pt.ink)
         }
         ctx.restore()
       }
