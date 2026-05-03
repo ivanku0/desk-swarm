@@ -22,6 +22,11 @@ import {
 import { BEETLE_ATLAS_MANIFEST_URL } from './beetleAtlas.types'
 import { fetchBeetleAtlasManifest, loadBeetleAtlasBundle } from './beetleAtlasLoader'
 import { drawBeetleAtlasDebugWireframe, drawBeetleFromAtlas } from './beetleAtlasDraw'
+import {
+  drawSwarmTokenSpriteCentered,
+  loadAllSwarmTokenFrames,
+  type SwarmTokenFrames,
+} from './swarmTokenSprite'
 
 /** Extra scale for small swarms — capped low so neighbors do not stack on each other. */
 function swarmGlyphSizeMul(n: number): number {
@@ -169,6 +174,10 @@ function readBeetleDebugQuery(): boolean {
   return new URLSearchParams(window.location.search).has('beetleDebug')
 }
 
+function swarmSpriteReady(frames: SwarmTokenFrames): boolean {
+  return Boolean(frames.a && frames.a.naturalWidth > 0)
+}
+
 function drawNormalContent(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -184,9 +193,11 @@ function drawNormalContent(
   reducedMotion: boolean,
   scuteAtlas: ScuteAtlasPaint,
   scuteAtlasManifest: BeetleAtlasManifest | null,
+  swarmFrames: SwarmTokenFrames,
 ) {
   const inks = presetId === 'horde' ? HORDE_INK_SHADES : BUG_INK_SHADES
   const variants = swarmGlyphVariants(presetId)
+  const useTokenSprite = swarmSpriteReady(swarmFrames)
   const panel = '#dfeedd'
 
   ctx.fillStyle = panel
@@ -261,6 +272,8 @@ function drawNormalContent(
       scuteAtlasManifest
     ) {
       drawBeetleAtlasDebugWireframe(ctx, scuteAtlasManifest, 0, 0, heroRadius)
+    } else if (useTokenSprite) {
+      drawSwarmTokenSpriteCentered(ctx, swarmFrames, vi, lens / 2)
     } else {
       drawGlyph(ctx, variants[vi]!, -lens / 2, -lens / 2, lens, lensInk)
     }
@@ -310,12 +323,17 @@ function drawNormalContent(
         const glyphSize = baseGlyph * sizeMul
         ctx.save()
         ctx.translate(
-          baseX + drift.dx + bobX + crawlX,
-          baseY + drift.dy + bobY + crawlY,
+          baseX + drift.dx + bobX + crawlX + glyphSize / 2,
+          baseY + drift.dy + bobY + crawlY + glyphSize / 2,
         )
         ctx.rotate(jitter)
         ctx.scale(twinPop, twinPop)
-        drawGlyph(ctx, variants[vi]!, 0, 0, glyphSize, glyphInk)
+        if (useTokenSprite) {
+          drawSwarmTokenSpriteCentered(ctx, swarmFrames, vi, glyphSize / 2)
+        } else {
+          ctx.translate(-glyphSize / 2, -glyphSize / 2)
+          drawGlyph(ctx, variants[vi]!, 0, 0, glyphSize, glyphInk)
+        }
         ctx.restore()
       }
     }
@@ -370,6 +388,17 @@ export const PixelField = forwardRef<
 ) {
   const [scuteAtlas, setScuteAtlas] = useState<ScuteAtlasPaint>({ kind: 'none' })
   const [scuteAtlasManifest, setScuteAtlasManifest] = useState<BeetleAtlasManifest | null>(null)
+  const [swarmTokens, setSwarmTokens] = useState<Record<PresetId, SwarmTokenFrames> | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    loadAllSwarmTokenFrames().then((r) => {
+      if (!cancelled) setSwarmTokens(r)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (presetId !== 'scute') {
@@ -552,6 +581,7 @@ export const PixelField = forwardRef<
         reducedMotion,
         scuteAtlas,
         scuteAtlasManifest,
+        swarmTokens?.[presetId] ?? { a: null, b: null },
       )
     }
 
@@ -576,7 +606,17 @@ export const PixelField = forwardRef<
       ro.disconnect()
       cancelAnimationFrame(raf)
     }
-  }, [presetId, count, pulseKey, fieldMode, reducedMotion, zoomScale, scuteAtlas, scuteAtlasManifest])
+  }, [
+    presetId,
+    count,
+    pulseKey,
+    fieldMode,
+    reducedMotion,
+    zoomScale,
+    scuteAtlas,
+    scuteAtlasManifest,
+    swarmTokens,
+  ])
 
   /** Dying animation */
   useEffect(() => {
@@ -594,6 +634,8 @@ export const PixelField = forwardRef<
     const start = performance.now()
     const dur = 620
     const variants = swarmGlyphVariants(presetId)
+    const tokenFrames = swarmTokens?.[presetId] ?? { a: null, b: null }
+    const useTok = swarmSpriteReady(tokenFrames)
 
     let deathRaf = 0
     const tick = () => {
@@ -621,11 +663,16 @@ export const PixelField = forwardRef<
         pt.rot += pt.vrot
         pt.life = Math.max(0, 1 - t * 1.15)
         const bmp = variants[pt.variant % variants.length]!
+        const splat = Math.min(cw, ch) * 0.7
         ctx.save()
         ctx.translate(pt.x, pt.y)
         ctx.rotate(pt.rot)
         ctx.globalAlpha = Math.max(0, pt.life)
-        drawGlyph(ctx, bmp, -cw * 0.35, -ch * 0.35, Math.min(cw, ch) * 0.7, pt.ink)
+        if (useTok) {
+          drawSwarmTokenSpriteCentered(ctx, tokenFrames, pt.variant, splat / 2)
+        } else {
+          drawGlyph(ctx, bmp, -cw * 0.35, -ch * 0.35, splat, pt.ink)
+        }
         ctx.restore()
       }
       if (t < 1) {
@@ -637,7 +684,7 @@ export const PixelField = forwardRef<
     }
     deathRaf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(deathRaf)
-  }, [fieldMode, reducedMotion, count, presetId, onDyingComplete])
+  }, [fieldMode, reducedMotion, count, presetId, onDyingComplete, swarmTokens])
 
   /** Empty joke blink */
   useEffect(() => {

@@ -1,7 +1,8 @@
 /**
  * Each id needs: `PRESETS` row in `registry.ts`, card bundle in `cardData.ts`,
- * and **`src/viz/swarmGlyphs/<id>.ts`** (`SWARM_GLYPHS`). Add the preset to
- * **`scripts/ref-to-glyphs.mjs`** (`PRESET_CONFIG`) so `npm run glyphs:build -- <id>` works.
+ * **`public/art/<id>/token-ref.png`** (swarm sprite; optional **`token-ref-2.png`** for twin),
+ * **`src/viz/swarmGlyphs/<id>.ts`** (bitmask fallback), URLs in **`src/viz/swarmTokenSprite.ts`**,
+ * and **`scripts/ref-to-glyphs.mjs`** (`PRESET_CONFIG`) if you use the 8×8 generator.
  */
 export type PresetId = 'scute' | 'horde'
 
