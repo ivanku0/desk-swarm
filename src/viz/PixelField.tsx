@@ -616,7 +616,7 @@ function drawNormalContent(
       const flipX = calmKrenkoNoBoss ? krenkoMinionFlipX(0) : 1
       ctx.scale(flipX, 1)
       drawSwarmTokenSpriteCentered(ctx, swarmFrames, tokenVariant, lens / 2)
-    } else {
+    } else if (presetId !== 'scute') {
       const flipX = calmKrenkoNoBoss ? krenkoMinionFlipX(0) : 1
       ctx.scale(flipX, 1)
       drawGlyph(ctx, variants[vi]!, -lens / 2, -lens / 2, lens, lensInk)
@@ -690,7 +690,7 @@ function drawNormalContent(
             ? pickKrenkoMinionFrameVariant(birthRank, swarmFrames)
             : vi
           drawSwarmTokenSpriteCentered(ctx, swarmFrames, tokenVariant, glyphSize / 2)
-        } else {
+        } else if (presetId !== 'scute') {
           ctx.translate(-glyphSize / 2, -glyphSize / 2)
           drawGlyph(ctx, variants[vi]!, 0, 0, glyphSize, glyphInk)
         }
