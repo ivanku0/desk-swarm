@@ -30,6 +30,11 @@ describe('zoomScaleFromCount', () => {
     expect(z2 - z4).toBeLessThan(0.045)
   })
 
+  it('plateaus between powers of two through 256 (octave stepping)', () => {
+    expect(zoomScaleFromCount(3n, 'scute')).toBe(zoomScaleFromCount(2n, 'scute'))
+    expect(zoomScaleFromCount(200n, 'scute')).toBe(zoomScaleFromCount(128n, 'scute'))
+  })
+
   it('above 256 uses legacy curve', () => {
     expect(zoomScaleFromCount(257n, 'scute')).toBe(zoomScaleFromStep(zoomStepFromCountLegacy(257n)))
     expect(zoomScaleFromCount(257n, 'horde')).toBe(

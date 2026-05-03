@@ -10,10 +10,11 @@ export function zoomScaleFromStep(step: number): number {
 }
 
 /**
- * Counts 1…256: from a modest single-scute lens toward the legacy scale at 256.
- * Ease-in on log₂ progress (u = (log₂N/8)^k, k>1) so the camera **stays tighter
- * longer** for small/medium swarms, then **zooms out more** in the high hundreds,
- * avoiding a big “step down” right after the first few tokens.
+ * Counts 1…256: **stepped by octave** (floor(log₂ n)) so zoom only moves at
+ * 1 → 2 → 4 → … → 256, matching **Scute up** doubling; counts between powers of
+ * two keep the same lens as the lower anchor (no slow drift on +1 taps).
+ * Each step still uses the eased scale at that anchor (smooth curve sampled at
+ * 2^k only). Above 256, legacy **discrete** log₁₀ steps apply unchanged.
  */
 const SWARM_LOW_ZOOM_CAP = 256n
 /** Max zoom (count 1); still above step-5 but less extreme than a 1.7+ lens. */
@@ -21,8 +22,24 @@ const SWARM_SCALE_AT_ONE = 1.58
 /** >1: stronger “hold zoom” early; must stay >0 for monotonic zoom-out. */
 const SWARM_ZOOM_EASE_IN_POWER = 1.32
 
+/** Continuous eased scale for 1 ≤ count ≤ 256 (internal building block). */
+function zoomContinuous1To256(count: bigint): number {
+  const scaleAt256 = zoomScaleFromStep(zoomStepFromCountLegacy(256n))
+  const t = Math.log2(Number(count)) / 8
+  const uRaw = Math.max(0, Math.min(1, t))
+  const u = Math.pow(uRaw, SWARM_ZOOM_EASE_IN_POWER)
+  return SWARM_SCALE_AT_ONE + (scaleAt256 - SWARM_SCALE_AT_ONE) * u
+}
+
+/** Snap count to the largest 2^k ≤ n (within 1…256) for stepped zoom. */
+function lowCountAnchor(count: bigint): bigint {
+  if (count <= 1n) return 1n
+  const k = Math.min(8, Math.floor(Math.log2(Number(count))))
+  return 1n << BigInt(k)
+}
+
 /**
- * Camera scale: eased lens (1 → 256), then legacy log steps above 256.
+ * Camera scale: stepped octaves (1 → 256), then legacy log steps above 256.
  * Same mapping for every preset (`presetId` reserved for call sites / future).
  */
 export function zoomScaleFromCount(count: bigint, _presetId?: PresetId): number {
@@ -31,9 +48,5 @@ export function zoomScaleFromCount(count: bigint, _presetId?: PresetId): number 
   if (count > SWARM_LOW_ZOOM_CAP) {
     return zoomScaleFromStep(zoomStepFromCountLegacy(count))
   }
-  const scaleAt256 = zoomScaleFromStep(zoomStepFromCountLegacy(256n))
-  const t = Math.log2(Number(count)) / 8
-  const uRaw = Math.max(0, Math.min(1, t))
-  const u = Math.pow(uRaw, SWARM_ZOOM_EASE_IN_POWER)
-  return SWARM_SCALE_AT_ONE + (scaleAt256 - SWARM_SCALE_AT_ONE) * u
+  return zoomContinuous1To256(lowCountAnchor(count))
 }
