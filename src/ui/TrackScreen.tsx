@@ -14,6 +14,7 @@ import {
 import { formatCount } from '../model/formatCount'
 import { zoomScaleFromCount } from '../viz/zoomStepScale'
 import { PixelField, type FieldMode, type PixelFieldHandle } from '../viz/PixelField'
+import type { KrenkoDyingKind } from '../viz/krenkoDeathViz'
 import { DigitMeter } from './DigitMeter'
 import { useLongPress } from '../hooks/useLongPress'
 import type { ActivityEntry } from './ActivityLog'
@@ -50,6 +51,8 @@ export function TrackScreen({
   const preset = getPreset(presetId)
   const [count, setCount] = useState<bigint>(() => (presetId === 'krenko' ? 0n : DEFAULT_COUNT))
   const [krenkoPresent, setKrenkoPresent] = useState(false)
+  /** Once Krenko has been on the board this run, goblins stay in ring layout after he leaves. */
+  const [krenkoBossEverCast, setKrenkoBossEverCast] = useState(false)
   type UndoEntry = { count: bigint; krenkoPresent: boolean }
   const undoRef = useRef<UndoEntry[]>([])
   const [manualOpen, setManualOpen] = useState(false)
@@ -62,6 +65,8 @@ export function TrackScreen({
   const [wipeChoiceOpen, setWipeChoiceOpen] = useState(false)
   const fieldRef = useRef<PixelFieldHandle>(null)
   const wipeFromRef = useRef(0n)
+  const krenkoDyingKindRef = useRef<KrenkoDyingKind | null>(null)
+  const [krenkoDyingKind, setKrenkoDyingKind] = useState<KrenkoDyingKind | null>(null)
   const [drainKey, setDrainKey] = useState(0)
   const [heroDrain, setHeroDrain] = useState<bigint | null>(null)
   type DeltaFlash = { text: string; anchor: DeltaFlashAnchor; id: number }
@@ -204,6 +209,8 @@ export function TrackScreen({
 
   const startWipeSequence = useCallback(
     (from: bigint) => {
+      krenkoDyingKindRef.current = 'boardWipe'
+      setKrenkoDyingKind('boardWipe')
       pushUndo()
       wipeFromRef.current = from
       setWipeSnapshot(from)
@@ -211,6 +218,16 @@ export function TrackScreen({
     },
     [pushUndo],
   )
+
+  /** Krenko + horde: animate boss death, then remove Krenko and keep goblin count (see `krenkoDeathViz`). */
+  const startKrenkoBossDismissalDeath = useCallback(() => {
+    if (presetId !== 'krenko') return
+    if (!krenkoPresentRef.current || countRef.current <= 0n) return
+    krenkoDyingKindRef.current = 'bossDismissal'
+    setKrenkoDyingKind('bossDismissal')
+    pushUndo()
+    setFieldMode('dying')
+  }, [presetId, pushUndo])
 
   const killBossOnlyFromSkull = useCallback(() => {
     if (presetId !== 'krenko') return
@@ -221,25 +238,18 @@ export function TrackScreen({
       startWipeSequence(1n)
       return
     }
-    const { total, present } = dismissKrenkoBossKeepHorde(before, krenkoPresentRef.current)
-    if (before === total && present === krenkoPresentRef.current) return
-    setHeroDrain(null)
-    pushUndo()
-    setCount(total)
-    setKrenkoPresent(present)
-    setPulseKey((k) => k + 1)
-    showDelta(before, total, 'wipe', 'boss out')
-    appendActivity({
-      presetId,
-      text: `Krenko leaves — ${formatCount(total)} goblins remain`,
-    })
-  }, [appendActivity, presetId, pushUndo, showDelta, startWipeSequence])
+    startKrenkoBossDismissalDeath()
+  }, [presetId, startKrenkoBossDismissalDeath, startWipeSequence])
 
   useLayoutEffect(() => {
     fieldModeRef.current = fieldMode
     countRef.current = count
     krenkoPresentRef.current = krenkoPresent
   }, [fieldMode, count, krenkoPresent])
+
+  useEffect(() => {
+    if (presetId === 'krenko' && krenkoPresent) setKrenkoBossEverCast(true)
+  }, [presetId, krenkoPresent])
 
   const { start: startWipeHold, clear: clearWipeHold } = useLongPress(
     () => {
@@ -265,6 +275,35 @@ export function TrackScreen({
   )
 
   const onDyingComplete = useCallback(() => {
+    const kind = krenkoDyingKindRef.current
+
+    if (presetId === 'krenko' && kind === 'bossDismissal') {
+      const before = countRef.current
+      const { total, present } = dismissKrenkoBossKeepHorde(before, krenkoPresentRef.current)
+      if (before === total && present === krenkoPresentRef.current) {
+        krenkoDyingKindRef.current = null
+        setKrenkoDyingKind(null)
+        setFieldMode('normal')
+        return
+      }
+      setHeroDrain(null)
+      setCount(total)
+      setKrenkoPresent(present)
+      setWipeSnapshot(null)
+      krenkoDyingKindRef.current = null
+      setKrenkoDyingKind(null)
+      setFieldMode('normal')
+      setPulseKey((k) => k + 1)
+      showDelta(before, total, 'bossOut', 'boss out')
+      appendActivity({
+        presetId,
+        text: `Krenko leaves — ${formatCount(total)} goblins remain`,
+      })
+      return
+    }
+
+    krenkoDyingKindRef.current = null
+    setKrenkoDyingKind(null)
     const from = wipeFromRef.current
     setCount(0n)
     if (presetId === 'krenko') setKrenkoPresent(false)
@@ -387,9 +426,21 @@ export function TrackScreen({
             reducedMotion={reducedMotion}
             zoomScale={zoomScale}
             leaderPresent={presetId === 'krenko' && krenkoPresent}
+            krenkoOrbitHordeWithoutBoss={presetId === 'krenko' && krenkoBossEverCast && !krenkoPresent}
+            krenkoDyingKind={krenkoDyingKind}
             onDyingComplete={onDyingComplete}
             onEmptyJokeComplete={onEmptyJokeComplete}
           />
+          {deltaFlash?.anchor === 'bossOut' ? (
+            <span
+              key={deltaFlash.id}
+              className="delta-flash delta-flash--field-board-center"
+              aria-hidden
+              onAnimationEnd={() => clearDeltaFlash(deltaFlash.id)}
+            >
+              {deltaFlash.text}
+            </span>
+          ) : null}
         </div>
         <div className="field-corner field-corner--tl flash-slot">
           {deltaFlash?.anchor === 'wipe' ? (

@@ -1,6 +1,14 @@
 import type { PresetId } from '../presets/types'
 
-export type DeltaFlashAnchor = 'undo' | 'grow' | 'minus1' | 'plus1' | 'reset' | 'wipe'
+export type DeltaFlashAnchor =
+  | 'undo'
+  | 'grow'
+  | 'minus1'
+  | 'plus1'
+  | 'reset'
+  | 'wipe'
+  /** Krenko boss dismissed: flash over the canvas center (where the boss face was). */
+  | 'bossOut'
 
 const HYPE_LINES: Record<PresetId, readonly [string, string, string]> = {
   scute: ['scute scute', 'SCUTE', 'scute'],

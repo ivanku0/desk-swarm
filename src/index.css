@@ -1013,6 +1013,30 @@ button.hero-panel--meter:focus-visible {
   animation: delta-rise 1s ease-out forwards;
 }
 
+/* Krenko “boss out” — centered on the field canvas (boss portrait), not the wipe corner. */
+.delta-flash--field-board-center {
+  top: 50%;
+  left: 50%;
+  bottom: auto;
+  right: auto;
+  z-index: 15;
+  animation: delta-field-board-center-pop 1.05s ease-out forwards;
+}
+
+@keyframes delta-field-board-center-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(8px);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(-14px);
+  }
+}
+
 @keyframes delta-field-corner {
   0% {
     opacity: 0;

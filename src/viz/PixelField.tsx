@@ -28,6 +28,11 @@ import {
   type SwarmTokenFrames,
 } from './swarmTokenSprite'
 import { KRENKO_ASSET_FALLBACK_URLS, KRENKO_ASSET_URLS } from './krenkoAssets'
+import {
+  KRENKO_BOSS_DEATH_DURATION_MS,
+  krenkoDyingSwarmCountForParticles,
+  type KrenkoDyingKind,
+} from './krenkoDeathViz'
 
 /** Extra scale for dense swarms — keeps cell-sized glyphs from overlapping when n is large. */
 function swarmGlyphSizeMul(n: number): number {
@@ -304,22 +309,26 @@ function drawKrenkoOrbitSwarm(
   centerX: number,
   centerY: number,
   bossHalf: number,
-  bossSprite: HTMLImageElement,
+  bossSprite: HTMLImageElement | null,
   minionA: HTMLImageElement | null,
   minionB: HTMLImageElement | null,
   minionInkFallback: string,
+  /** When false, all `totalCount` tokens are drawn as orbiting minions (post–boss-dismiss horde). */
+  centerBoss: boolean,
 ) {
   ctx.save()
   ctx.translate(centerX, centerY)
   const t = timeMs * 0.001
-  const bossDriftY = reducedMotion ? 0 : Math.sin(t * 0.56) * bossHalf * 0.07
-  const bossDriftX = reducedMotion ? 0 : Math.cos(t * 0.41) * bossHalf * 0.03
-  const bossTilt = reducedMotion ? 0 : Math.sin(t * 0.34) * 0.022
-  ctx.translate(bossDriftX, bossDriftY)
-  ctx.rotate(bossTilt)
-  drawImageCentered(ctx, bossSprite, bossHalf)
+  if (centerBoss && bossSprite) {
+    const bossDriftY = reducedMotion ? 0 : Math.sin(t * 0.56) * bossHalf * 0.07
+    const bossDriftX = reducedMotion ? 0 : Math.cos(t * 0.41) * bossHalf * 0.03
+    const bossTilt = reducedMotion ? 0 : Math.sin(t * 0.34) * 0.022
+    ctx.translate(bossDriftX, bossDriftY)
+    ctx.rotate(bossTilt)
+    drawImageCentered(ctx, bossSprite, bossHalf)
+  }
 
-  const nMinions = Math.max(0, Number(totalCount) - 1)
+  const nMinions = centerBoss ? Math.max(0, Number(totalCount) - 1) : Number(totalCount)
   if (nMinions <= 0) {
     ctx.restore()
     return
@@ -505,6 +514,53 @@ function drawKrenkoWipeBossOverlay(
   ctx.restore()
 }
 
+/** During boss-dismissal death: orbiting minions stay visible under the falling boss overlay. */
+function paintKrenkoBossDismissalHordeUnderlay(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  zoomScale: number,
+  panX: number,
+  panY: number,
+  timeMs: number,
+  reducedMotion: boolean,
+  /** Goblin-only count (board total minus the dying boss slot). */
+  minionHordeCount: bigint,
+  minionA: HTMLImageElement | null,
+  minionB: HTMLImageElement | null,
+) {
+  if (minionHordeCount <= 0n) return
+  const inks = inkShadesForPreset('krenko')
+  const cw = w / SWARM_COLS
+  const ch = h / SWARM_ROWS
+  const camX = w / 2 + panX
+  const camY = h / 2 + panY
+  ctx.save()
+  ctx.translate(w / 2, h / 2)
+  ctx.scale(zoomScale, zoomScale)
+  ctx.translate(-camX, -camY)
+  const cx = Math.floor(SWARM_COLS / 2)
+  const cy = Math.floor(SWARM_ROWS / 2)
+  const cellCenterX = (cx + 0.5) * cw
+  const cellCenterY = (cy + 0.5) * ch
+  const lens = (Math.min(w, h) / zoomScale) * 0.62
+  drawKrenkoOrbitSwarm(
+    ctx,
+    minionHordeCount,
+    timeMs,
+    reducedMotion,
+    cellCenterX,
+    cellCenterY,
+    lens / 2,
+    null,
+    minionA,
+    minionB,
+    inks[0]!,
+    false,
+  )
+  ctx.restore()
+}
+
 function drawNormalContent(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -522,6 +578,8 @@ function drawNormalContent(
   scuteAtlasManifest: BeetleAtlasManifest | null,
   swarmFrames: SwarmTokenFrames,
   leaderPresent: boolean,
+  /** True once Krenko has been cast this run; boss off-board → keep ring layout instead of calm grid. */
+  krenkoOrbitHordeWithoutBoss: boolean,
   bossSprite: HTMLImageElement | null,
   minionA: HTMLImageElement | null,
   minionB: HTMLImageElement | null,
@@ -547,7 +605,8 @@ function drawNormalContent(
   const krenkoBossCellIdx =
     presetId === 'krenko' && leaderPresent && bossReady && n > 0 ? order[0]! : -1
 
-  const calmKrenkoNoBoss = presetId === 'krenko' && !leaderPresent
+  const calmKrenkoNoBoss =
+    presetId === 'krenko' && !leaderPresent && !krenkoOrbitHordeWithoutBoss
   const birthRankByIdx =
     calmKrenkoNoBoss && n > 0
       ? (() => {
@@ -584,15 +643,19 @@ function drawNormalContent(
   const twinPhase = reducedMotion ? 0 : Math.floor(timeMs / GLYPH_TWIN_MS) % 2
   const visualPhase = calmKrenkoNoBoss ? 0 : twinPhase
   const twinPop = reducedMotion || calmKrenkoNoBoss ? 1 : 1 + (twinPhase === 0 ? 0.06 : -0.032)
-  const isKrenkoOrbitMode = presetId === 'krenko' && leaderPresent && bossReady
+  const useKrenkoOrbitCanvas =
+    presetId === 'krenko' &&
+    n > 0 &&
+    ((leaderPresent && bossReady) || (krenkoOrbitHordeWithoutBoss && !leaderPresent))
 
-  if (isKrenkoOrbitMode) {
+  if (useKrenkoOrbitCanvas) {
     const cx = Math.floor(SWARM_COLS / 2)
     const cy = Math.floor(SWARM_ROWS / 2)
     const cellCenterX = (cx + 0.5) * cw
     const cellCenterY = (cy + 0.5) * ch
     const lens = (Math.min(w, h) / zoomScale) * 0.62
     const lensInk = inks[0]!
+    const centerBoss = leaderPresent
     drawKrenkoOrbitSwarm(
       ctx,
       count,
@@ -601,10 +664,11 @@ function drawNormalContent(
       cellCenterX,
       cellCenterY,
       lens / 2,
-      bossSprite!,
+      bossSprite,
       minionA,
       minionB,
       lensInk,
+      centerBoss,
     )
   } else if (n === 1) {
     const cx = Math.floor(SWARM_COLS / 2)
@@ -784,6 +848,13 @@ export const PixelField = forwardRef<
     zoomScale: number
     /** Krenko track: boss is on the board (centered leader art + orbiting minion tokens). */
     leaderPresent?: boolean
+    /**
+     * Krenko track: boss was cast at least once this run and is now off-board — keep orbiting ring
+     * layout for goblins instead of the calm staggered grid (used for “never cast” manual hordes).
+     */
+    krenkoOrbitHordeWithoutBoss?: boolean
+    /** When `fieldMode === 'dying'`, why (drives particle bulk + timing for Krenko boss vignettes). */
+    krenkoDyingKind?: KrenkoDyingKind | null
     onDyingComplete?: () => void
     onEmptyJokeComplete?: () => void
   }
@@ -796,6 +867,8 @@ export const PixelField = forwardRef<
     reducedMotion,
     zoomScale,
     leaderPresent = false,
+    krenkoOrbitHordeWithoutBoss = false,
+    krenkoDyingKind = null,
     onDyingComplete,
     onEmptyJokeComplete,
   },
@@ -810,6 +883,8 @@ export const PixelField = forwardRef<
   const [krenkoMinionB, setKrenkoMinionB] = useState<HTMLImageElement | null>(null)
   const krenkoBossSpriteRef = useRef<HTMLImageElement | null>(null)
   const krenkoBossDeathSpriteRef = useRef<HTMLImageElement | null>(null)
+  const krenkoMinionARef = useRef<HTMLImageElement | null>(null)
+  const krenkoMinionBRef = useRef<HTMLImageElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -884,7 +959,9 @@ export const PixelField = forwardRef<
   useLayoutEffect(() => {
     krenkoBossSpriteRef.current = krenkoBossSprite
     krenkoBossDeathSpriteRef.current = krenkoBossDeathSprite
-  }, [krenkoBossSprite, krenkoBossDeathSprite])
+    krenkoMinionARef.current = krenkoMinionA
+    krenkoMinionBRef.current = krenkoMinionB
+  }, [krenkoBossSprite, krenkoBossDeathSprite, krenkoMinionA, krenkoMinionB])
   const zoomScaleRef = useRef(zoomScale)
   const dragRef = useRef<{ id: number | null; lx: number; ly: number }>({
     id: null,
@@ -1033,6 +1110,7 @@ export const PixelField = forwardRef<
         scuteAtlasManifest,
         swarmTokens?.[presetId] ?? { a: null, b: null },
         leaderPresent,
+        krenkoOrbitHordeWithoutBoss,
         presetId === 'krenko' ? krenkoBossSprite : null,
         presetId === 'krenko' ? krenkoMinionA : null,
         presetId === 'krenko' ? krenkoMinionB : null,
@@ -1071,6 +1149,7 @@ export const PixelField = forwardRef<
     scuteAtlasManifest,
     swarmTokens,
     leaderPresent,
+    krenkoOrbitHordeWithoutBoss,
     krenkoBossSprite,
     krenkoMinionA,
     krenkoMinionB,
@@ -1088,9 +1167,10 @@ export const PixelField = forwardRef<
     }
     const w = canvas.clientWidth
     const h = canvas.clientHeight
-    particlesRef.current = buildParticles(count, presetId, w, h)
+    const particleBulk = krenkoDyingSwarmCountForParticles(presetId, krenkoDyingKind, count, leaderPresent)
+    particlesRef.current = buildParticles(particleBulk, presetId, w, h)
     const start = performance.now()
-    const dur = 1580
+    const dur = KRENKO_BOSS_DEATH_DURATION_MS
     const variants = swarmGlyphVariants(presetId)
     const tokenFrames = swarmTokens?.[presetId] ?? { a: null, b: null }
     const useTok = swarmSpriteReady(tokenFrames)
@@ -1115,6 +1195,27 @@ export const PixelField = forwardRef<
       const panel = panelColorForPreset(presetId)
       ctx.fillStyle = panel
       ctx.fillRect(0, 0, ww, hh)
+      if (
+        presetId === 'krenko' &&
+        krenkoDyingKind === 'bossDismissal' &&
+        leaderPresent &&
+        count > 1n
+      ) {
+        const { x: px, y: py } = panRef.current
+        paintKrenkoBossDismissalHordeUnderlay(
+          ctx,
+          ww,
+          hh,
+          zoomScale,
+          px,
+          py,
+          performance.now(),
+          reducedMotion,
+          count - 1n,
+          krenkoMinionARef.current,
+          krenkoMinionBRef.current,
+        )
+      }
       const nPart = Math.max(1, particlesRef.current.length)
       const splat = swarmGlyphDrawSize(ww, hh, cw, ch, nPart)
       for (const pt of particlesRef.current) {
@@ -1149,7 +1250,17 @@ export const PixelField = forwardRef<
     }
     deathRaf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(deathRaf)
-  }, [fieldMode, reducedMotion, count, presetId, leaderPresent, zoomScale, onDyingComplete, swarmTokens])
+  }, [
+    fieldMode,
+    reducedMotion,
+    count,
+    presetId,
+    leaderPresent,
+    krenkoDyingKind,
+    zoomScale,
+    onDyingComplete,
+    swarmTokens,
+  ])
 
   /** Empty joke blink */
   useEffect(() => {
