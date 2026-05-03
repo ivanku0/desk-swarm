@@ -216,6 +216,11 @@ export function TrackScreen({
     if (presetId !== 'krenko') return
     if (!krenkoPresentRef.current || countRef.current <= 0n) return
     const before = countRef.current
+    /* Solo Krenko: same board-wipe death animation as full clear (spin + fall + death face). */
+    if (before === 1n) {
+      startWipeSequence(1n)
+      return
+    }
     const { total, present } = dismissKrenkoBossKeepHorde(before, krenkoPresentRef.current)
     if (before === total && present === krenkoPresentRef.current) return
     setHeroDrain(null)
@@ -228,7 +233,7 @@ export function TrackScreen({
       presetId,
       text: `Krenko leaves — ${formatCount(total)} goblins remain`,
     })
-  }, [appendActivity, presetId, pushUndo, showDelta])
+  }, [appendActivity, presetId, pushUndo, showDelta, startWipeSequence])
 
   useLayoutEffect(() => {
     fieldModeRef.current = fieldMode

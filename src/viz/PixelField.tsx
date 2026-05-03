@@ -469,7 +469,7 @@ function loadImageOptional(url: string): Promise<HTMLImageElement | null> {
   })
 }
 
-/** Board wipe: Krenko at orbit-scale, centered, fast spin + optional death-face sprite. */
+/** Board wipe: Krenko at orbit-scale, falls with splats (ease-in Y), spin + optional death-face sprite. */
 function drawKrenkoWipeBossOverlay(
   ctx: CanvasRenderingContext2D,
   ww: number,
@@ -483,12 +483,14 @@ function drawKrenkoWipeBossOverlay(
   const face = deathSprite && deathSprite.naturalWidth > 0 ? deathSprite : bossSprite
   const zs = Math.max(zoomScale, 0.02)
   const bossHalf = (Math.min(ww, hh) / zs) * 0.62 * 0.5
-  const spin = t * Math.PI * 5
-  const wobble = Math.sin(t * Math.PI * 16) * 4 * (1 - t * 0.85)
-  const alpha = Math.min(1, 0.22 + (1 - t) ** 0.82)
+  const u = Math.min(1, Math.max(0, t))
+  const fall = u * u * (hh * 0.46) + u * 26
+  const driftX = Math.sin(u * Math.PI * 6.2) * (16 - u * 12)
+  const spin = u * Math.PI * 5.5 + u * u * Math.PI * 2.4
+  const alpha = Math.min(1, 0.26 + (1 - u) ** 0.72 * 0.84)
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.translate(ww / 2 + wobble, hh / 2)
+  ctx.translate(ww / 2 + driftX, hh / 2 + fall)
   ctx.rotate(spin)
   drawImageCentered(ctx, face, bossHalf)
   ctx.restore()
