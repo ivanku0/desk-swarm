@@ -23,7 +23,7 @@ The **dense swarm** draws **`Bitmap8` glyphs** (fast), **per preset** under **`s
 | `scute` | `public/art/scute/token-ref.png`, then legacy `beetle-ref.png` | `swarmGlyphs/scute.ts` |
 | `horde` | `public/art/horde/token-ref.png` | `swarmGlyphs/horde.ts` |
 
-1. Drop your token art (photo, crop, or line art — high contrast helps; transparency OK).
+1. Drop your token art (photo, crop, or line art — high contrast helps; transparency OK). **Very dark canvas + dark bug** can collapse to an all-ink 8×8; use a **light matte** behind the subject or invert levels so the bug reads darker than the background before running the script.
 2. Run **`npm run glyphs:build -- scute`** or **`npm run glyphs:build -- horde`** (or both: `… -- scute horde`). With **no args**, the script updates **every** preset that has a readable reference file.
 3. Tweak thresholds in **`scripts/ref-to-glyphs.mjs`** or **hand-edit** the `0`/`1` grids.
 

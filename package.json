@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "glyphs:build": "node scripts/ref-to-glyphs.mjs"
+    "glyphs:build": "node scripts/ref-to-glyphs.mjs",
+    "glyphs:demo-scute": "node scripts/bootstrap-demo-token-ref.mjs && node scripts/ref-to-glyphs.mjs scute"
   },
   "dependencies": {
     "react": "^19.2.5",
