@@ -1,0 +1,17 @@
+{
+  "name": "Math is for blockers",
+  "short_name": "Blockers",
+  "description": "Casual Commander swarm counter for Scute Swarm and Homunculus Horde.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#c8d9c4",
+  "theme_color": "#c8d9c4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

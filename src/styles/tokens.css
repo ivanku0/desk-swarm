@@ -1,0 +1,24 @@
+/* Game Boy × pastel green + dusty teal (Horde accent) */
+:root {
+  --surface-app: #c8d9c4;
+  --surface-panel: #dfeedd;
+  --surface-pressed: #b4c8ae;
+  --ink: #1a2e1a;
+  --ink-muted: #4a5c46;
+  --border-subtle: #9aaa94;
+  --border-strong: #2d4a2d;
+  --accent-positive: #3d7a4a;
+  --accent-negative: #5c6b58;
+  --accent-alt: #3a7f7a;
+  --focus-ring: #1e5a52;
+  --duration-tap: 180ms;
+  --duration-screen: 320ms;
+  --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+  --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+}
+
+.preset-horde {
+  --accent-positive: var(--accent-alt);
+}
