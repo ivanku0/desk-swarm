@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PresetId } from '../presets/types'
 import { getPreset } from '../presets/registry'
-import { growCount, applyMicro, DEFAULT_COUNT } from '../model/tracking'
+import { growCountForPreset, applyMicro, DEFAULT_COUNT, SCUTE_LINEAR_MAX } from '../model/tracking'
 import { formatCount } from '../model/formatCount'
 import { zoomScaleFromCount } from '../viz/zoomStepScale'
 import { PixelField, type FieldMode, type PixelFieldHandle } from '../viz/PixelField'
@@ -16,7 +16,6 @@ import {
   IconModalConfirm,
   IconModalDismiss,
   IconPlus,
-  IconReset,
   IconSkull,
   IconUndo,
 } from './trackIcons'
@@ -45,7 +44,6 @@ export function TrackScreen({
   const [pulseKey, setPulseKey] = useState(0)
   const [fieldMode, setFieldMode] = useState<FieldMode>('normal')
   const [wipeSnapshot, setWipeSnapshot] = useState<bigint | null>(null)
-  const [resetOpen, setResetOpen] = useState(false)
   const [backOpen, setBackOpen] = useState(false)
   const [wipeHold, setWipeHold] = useState(0)
   const fieldRef = useRef<PixelFieldHandle>(null)
@@ -56,6 +54,7 @@ export function TrackScreen({
   type HypeFlash = { text: string; id: number }
   const [deltaFlash, setDeltaFlash] = useState<DeltaFlash | null>(null)
   const [hypeFlash, setHypeFlash] = useState<HypeFlash | null>(null)
+  const [growBurst, setGrowBurst] = useState(false)
 
   const clearDeltaFlash = useCallback((id: number) => {
     setDeltaFlash((cur) => (cur?.id === id ? null : cur))
@@ -89,8 +88,10 @@ export function TrackScreen({
 
   const doGrow = () => {
     const before = count
-    const next = growCount(count)
+    const next = growCountForPreset(count, presetId)
     if (next === before) return
+    const scuteExpGate = presetId === 'scute' && before === SCUTE_LINEAR_MAX
+    if (scuteExpGate && !reducedMotion) setGrowBurst(true)
     setHeroDrain(null)
     pushUndo(count)
     setCount(next)
@@ -182,18 +183,32 @@ export function TrackScreen({
       return
     }
     setHeroDrain(from)
+    const t0 = performance.now()
+    let tick = 0
+    const DRAIN_MS = 2600
+    const TICK_MS = 42
     const id = window.setInterval(() => {
       setHeroDrain((d) => {
         if (d === null || d === 0n) return null
-        const step = d > 800n ? d / 12n + 1n : 1n
+        const elapsed = Math.max(0, performance.now() - t0)
+        const leftMs = Math.max(0, DRAIN_MS - elapsed)
+        const ticksLeft = Math.max(1, Math.ceil(leftMs / TICK_MS))
+        // Step sized by remaining time so we never stall in a fixed tail.
+        let step = d / BigInt(ticksLeft)
+        if (step < 1n) step = 1n
+        // Deterministic jitter avoids robotic cadence while still converging to zero.
+        const jitterCycle = [1n, 1n, 2n, 1n, 3n, 1n]
+        const jitter = jitterCycle[tick % jitterCycle.length]!
+        tick += 1
+        step = step * jitter
         const next = d <= step ? 0n : d - step
         return next
       })
-    }, 42)
+    }, TICK_MS)
     const end = window.setTimeout(() => {
       clearInterval(id)
       setHeroDrain(null)
-    }, 3200)
+    }, DRAIN_MS + 80)
     return () => {
       clearInterval(id)
       clearTimeout(end)
@@ -202,16 +217,7 @@ export function TrackScreen({
 
   const heroNumber = heroDrain ?? count
 
-  const confirmReset = () => {
-    const before = count
-    setHeroDrain(null)
-    pushUndo(count)
-    setCount(DEFAULT_COUNT)
-    setPulseKey((k) => k + 1)
-    showDelta(before, DEFAULT_COUNT, 'reset')
-    setResetOpen(false)
-    appendActivity({ presetId, text: 'reset → 1' })
-  }
+  const scuteExpReady = presetId === 'scute' && count === SCUTE_LINEAR_MAX
 
   return (
     <div className={`screen track-screen ${preset.themeClass}${reducedMotion ? ' track-screen--reduce-motion' : ''}`}>
@@ -301,27 +307,6 @@ export function TrackScreen({
             </span>
           </button>
         </div>
-        <div className="field-corner field-corner--tr flash-slot">
-          {deltaFlash?.anchor === 'reset' ? (
-            <span
-              key={deltaFlash.id}
-              className="delta-flash delta-flash--field-corner"
-              aria-hidden
-              onAnimationEnd={() => clearDeltaFlash(deltaFlash.id)}
-            >
-              {deltaFlash.text}
-            </span>
-          ) : null}
-          <button
-            type="button"
-            className="field-fab field-fab--reset"
-            title="Reset to 1"
-            aria-label="Reset counter to 1"
-            onClick={() => setResetOpen(true)}
-          >
-            <IconReset className="track-glyph" />
-          </button>
-        </div>
       </div>
 
       <div className="grow-cluster">
@@ -351,8 +336,20 @@ export function TrackScreen({
               {deltaFlash.text}
             </span>
           ) : null}
-          <button type="button" className="grow-btn" onClick={doGrow}>
-            {preset.growLabel}
+          <button
+            type="button"
+            className={`grow-btn${scuteExpReady ? ' grow-btn--charged' : ''}${growBurst ? ' grow-btn--burst' : ''}`}
+            onClick={doGrow}
+            onAnimationEnd={(e) => {
+              if (e.animationName === 'grow-btn-burst') setGrowBurst(false)
+            }}
+          >
+            <span className="grow-btn__title">{preset.growLabel}</span>
+            {scuteExpReady ? (
+              <span className="grow-btn__subtitle" aria-hidden>
+                next: ×2
+              </span>
+            ) : null}
           </button>
         </div>
         <div className="micro-pair" role="group" aria-label="Add or remove one from the count">
@@ -400,34 +397,6 @@ export function TrackScreen({
           </div>
         </div>
       </div>
-
-      {resetOpen ? (
-        <div className="modal-backdrop" role="dialog" aria-labelledby="modal-reset-title">
-          <div className="modal modal--confirm">
-            <p id="modal-reset-title" className="modal-confirm-title">
-              are you sure?
-            </p>
-            <div className="modal-actions modal-actions--icons">
-              <button
-                type="button"
-                className="modal-icon-btn"
-                onClick={() => setResetOpen(false)}
-                aria-label="Cancel reset"
-              >
-                <IconModalDismiss className="track-glyph" />
-              </button>
-              <button
-                type="button"
-                className="modal-icon-btn modal-icon-btn--confirm"
-                onClick={confirmReset}
-                aria-label="Reset counter to 1"
-              >
-                <IconModalConfirm className="track-glyph" />
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {backOpen ? (
         <div className="modal-backdrop" role="dialog" aria-labelledby="modal-back-title">

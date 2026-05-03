@@ -2,7 +2,7 @@
  * Lucide icons for track UI (MIT).
  * https://lucide.dev — tree-shaken per import.
  */
-import { ArrowLeft, Check, Info, Minus, Plus, RotateCcw, Skull, Undo2, X } from 'lucide-react'
+import { ArrowLeft, Check, Info, Minus, Plus, Skull, Undo2, X } from 'lucide-react'
 
 const stroke = 2.25 as const
 
@@ -20,11 +20,6 @@ export function IconPlus(props: { className?: string }) {
 
 export function IconSkull(props: { className?: string }) {
   return <Skull className={props.className} size={22} strokeWidth={stroke} aria-hidden />
-}
-
-/** Counter reset to 1 — circular reset metaphor */
-export function IconReset(props: { className?: string }) {
-  return <RotateCcw className={props.className} size={22} strokeWidth={stroke} aria-hidden />
 }
 
 export function IconBackToMenu(props: { className?: string }) {

@@ -18,6 +18,8 @@ export interface MenuSlide {
   ctaLabel: string
   /** BEM suffix for tile theming */
   tileVariant: 'scute' | 'horde' | 'soon'
+  /** Optional top-band creature sprite (pixel art). */
+  swatchSpriteSrc?: string
 }
 
 export const MENU_SLIDES: readonly MenuSlide[] = [
@@ -31,6 +33,7 @@ export const MENU_SLIDES: readonly MenuSlide[] = [
     presetId: 'scute',
     ctaLabel: "let's scute",
     tileVariant: 'scute',
+    swatchSpriteSrc: '/art/scute/token-ref.png',
   },
   {
     id: 'horde',
@@ -42,6 +45,7 @@ export const MENU_SLIDES: readonly MenuSlide[] = [
     presetId: 'horde',
     ctaLabel: 'Go horde',
     tileVariant: 'horde',
+    swatchSpriteSrc: '/art/horde/token-ref.png',
   },
   {
     id: 'coming-soon',

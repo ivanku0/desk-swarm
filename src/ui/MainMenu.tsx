@@ -68,7 +68,11 @@ export function MainMenu({
             onTouchEnd={onTouchEnd}
           >
             <article className={`char-tile char-tile--${slide.tileVariant}`}>
-              <div className="char-tile__swatch" aria-hidden />
+              <div className="char-tile__swatch" aria-hidden>
+                {slide.swatchSpriteSrc ? (
+                  <img className="char-tile__swatchSprite" src={slide.swatchSpriteSrc} alt="" />
+                ) : null}
+              </div>
               <div className="char-tile__body">
                 <div className="char-tile__main">
                   <div className="char-tile__titleRow">

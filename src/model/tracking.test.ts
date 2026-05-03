@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyMicro, growCount, DEFAULT_COUNT } from './tracking'
+import { applyMicro, growCount, growCountForPreset, DEFAULT_COUNT } from './tracking'
 
 describe('tracking', () => {
   it('doubles', () => {
@@ -9,6 +9,19 @@ describe('tracking', () => {
 
   it('grow from zero restarts at one', () => {
     expect(growCount(0n)).toBe(1n)
+  })
+
+  it('scute grows linearly through 6, then doubles', () => {
+    expect(growCountForPreset(0n, 'scute')).toBe(1n)
+    expect(growCountForPreset(5n, 'scute')).toBe(6n)
+    expect(growCountForPreset(6n, 'scute')).toBe(7n)
+    expect(growCountForPreset(7n, 'scute')).toBe(14n)
+  })
+
+  it('non-scute presets keep doubling behavior', () => {
+    expect(growCountForPreset(1n, 'horde')).toBe(2n)
+    expect(growCountForPreset(6n, 'horde')).toBe(12n)
+    expect(growCountForPreset(0n, 'horde')).toBe(1n)
   })
 
   it('micro clamps at zero', () => {
