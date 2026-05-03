@@ -463,13 +463,22 @@ function loadImageOptional(url: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image()
     img.decoding = 'async'
-    img.onload = () => resolve(img)
+    img.onload = () => {
+      void img
+        .decode()
+        .catch(() => undefined)
+        .finally(() => resolve(img))
+    }
     img.onerror = () => resolve(null)
     img.src = url
   })
 }
 
-/** Board wipe: Krenko at orbit-scale, falls with splats (ease-in Y), spin + optional death-face sprite. */
+function imageReady(img: HTMLImageElement | null): img is HTMLImageElement {
+  return Boolean(img && img.complete && img.naturalWidth > 0)
+}
+
+/** Board wipe: Krenko at orbit-scale, falls with splats (ease-in Y), spin + death-face when loaded. */
 function drawKrenkoWipeBossOverlay(
   ctx: CanvasRenderingContext2D,
   ww: number,
@@ -479,14 +488,14 @@ function drawKrenkoWipeBossOverlay(
   bossSprite: HTMLImageElement,
   deathSprite: HTMLImageElement | null,
 ) {
-  if (!bossSprite.naturalWidth) return
-  const face = deathSprite && deathSprite.naturalWidth > 0 ? deathSprite : bossSprite
+  if (!imageReady(bossSprite)) return
+  const face = imageReady(deathSprite) ? deathSprite : bossSprite
   const zs = Math.max(zoomScale, 0.02)
   const bossHalf = (Math.min(ww, hh) / zs) * 0.62 * 0.5
   const u = Math.min(1, Math.max(0, t))
-  const fall = u * u * (hh * 0.46) + u * 26
-  const driftX = Math.sin(u * Math.PI * 6.2) * (16 - u * 12)
-  const spin = u * Math.PI * 5.5 + u * u * Math.PI * 2.4
+  const fall = u * u * (hh * 0.34) + u * 16
+  const driftX = Math.sin(u * Math.PI * 4.5) * (12 - u * 9)
+  const spin = u * Math.PI * 2.4 + u * u * Math.PI * 1.1
   const alpha = Math.min(1, 0.26 + (1 - u) ** 0.72 * 0.84)
   ctx.save()
   ctx.globalAlpha = alpha
@@ -799,6 +808,8 @@ export const PixelField = forwardRef<
   const [krenkoBossDeathSprite, setKrenkoBossDeathSprite] = useState<HTMLImageElement | null>(null)
   const [krenkoMinionA, setKrenkoMinionA] = useState<HTMLImageElement | null>(null)
   const [krenkoMinionB, setKrenkoMinionB] = useState<HTMLImageElement | null>(null)
+  const krenkoBossSpriteRef = useRef<HTMLImageElement | null>(null)
+  const krenkoBossDeathSpriteRef = useRef<HTMLImageElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -870,6 +881,10 @@ export const PixelField = forwardRef<
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const panRef = useRef({ x: 0, y: 0 })
+  useLayoutEffect(() => {
+    krenkoBossSpriteRef.current = krenkoBossSprite
+    krenkoBossDeathSpriteRef.current = krenkoBossDeathSprite
+  }, [krenkoBossSprite, krenkoBossDeathSprite])
   const zoomScaleRef = useRef(zoomScale)
   const dragRef = useRef<{ id: number | null; lx: number; ly: number }>({
     id: null,
@@ -1075,7 +1090,7 @@ export const PixelField = forwardRef<
     const h = canvas.clientHeight
     particlesRef.current = buildParticles(count, presetId, w, h)
     const start = performance.now()
-    const dur = 820
+    const dur = 1580
     const variants = swarmGlyphVariants(presetId)
     const tokenFrames = swarmTokens?.[presetId] ?? { a: null, b: null }
     const useTok = swarmSpriteReady(tokenFrames)
@@ -1120,8 +1135,10 @@ export const PixelField = forwardRef<
         }
         ctx.restore()
       }
-      if (presetId === 'krenko' && leaderPresent && krenkoBossSprite?.naturalWidth) {
-        drawKrenkoWipeBossOverlay(ctx, ww, hh, zoomScale, t, krenkoBossSprite, krenkoBossDeathSprite)
+      const bossSp = krenkoBossSpriteRef.current
+      const deathSp = krenkoBossDeathSpriteRef.current
+      if (presetId === 'krenko' && leaderPresent && imageReady(bossSp)) {
+        drawKrenkoWipeBossOverlay(ctx, ww, hh, zoomScale, t, bossSp, deathSp)
       }
       if (t < 1) {
         deathRaf = requestAnimationFrame(tick)
@@ -1132,18 +1149,7 @@ export const PixelField = forwardRef<
     }
     deathRaf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(deathRaf)
-  }, [
-    fieldMode,
-    reducedMotion,
-    count,
-    presetId,
-    leaderPresent,
-    zoomScale,
-    krenkoBossSprite,
-    krenkoBossDeathSprite,
-    onDyingComplete,
-    swarmTokens,
-  ])
+  }, [fieldMode, reducedMotion, count, presetId, leaderPresent, zoomScale, onDyingComplete, swarmTokens])
 
   /** Empty joke blink */
   useEffect(() => {
