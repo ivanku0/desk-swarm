@@ -10,11 +10,11 @@ export function zoomScaleFromStep(step: number): number {
 }
 
 /**
- * Counts 1…256: **stepped by octave** (floor(log₂ n)) so zoom only moves at
- * 1 → 2 → 4 → … → 256, matching **Scute up** doubling; counts between powers of
- * two keep the same lens as the lower anchor (no slow drift on +1 taps).
- * Each step still uses the eased scale at that anchor (smooth curve sampled at
- * 2^k only). Above 256, legacy **discrete** log₁₀ steps apply unchanged.
+ * Counts 1…256: **counts 1–8** keep the same lens as a single creature (room for
+ * a small pile without zooming out). From **9** onward, zoom **steps by octave**
+ * (floor(log₂ n) → 8, 16, …, 256): no drift on +1 between powers of two. Each
+ * step uses the eased scale at that anchor. Above 256, legacy **discrete** log₁₀
+ * steps apply unchanged.
  */
 const SWARM_LOW_ZOOM_CAP = 256n
 /** Max zoom (count 1); still above step-5 but less extreme than a 1.7+ lens. */
@@ -31,9 +31,9 @@ function zoomContinuous1To256(count: bigint): number {
   return SWARM_SCALE_AT_ONE + (scaleAt256 - SWARM_SCALE_AT_ONE) * u
 }
 
-/** Snap count to the largest 2^k ≤ n (within 1…256) for stepped zoom. */
+/** Anchor count for eased zoom in the 1…256 band (see module comment). */
 function lowCountAnchor(count: bigint): bigint {
-  if (count <= 1n) return 1n
+  if (count <= 8n) return 1n
   const k = Math.min(8, Math.floor(Math.log2(Number(count))))
   return 1n << BigInt(k)
 }

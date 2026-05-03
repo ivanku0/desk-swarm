@@ -35,6 +35,14 @@ describe('zoomScaleFromCount', () => {
     expect(zoomScaleFromCount(200n, 'scute')).toBe(zoomScaleFromCount(128n, 'scute'))
   })
 
+  it('counts 1–8 keep the same zoom as one creature', () => {
+    const z1 = zoomScaleFromCount(1n, 'scute')
+    for (const n of [2n, 3n, 4n, 5n, 6n, 7n, 8n]) {
+      expect(zoomScaleFromCount(n, 'scute')).toBe(z1)
+    }
+    expect(zoomScaleFromCount(9n, 'scute')).toBeLessThan(z1)
+  })
+
   it('above 256 uses legacy curve', () => {
     expect(zoomScaleFromCount(257n, 'scute')).toBe(zoomScaleFromStep(zoomStepFromCountLegacy(257n)))
     expect(zoomScaleFromCount(257n, 'horde')).toBe(
