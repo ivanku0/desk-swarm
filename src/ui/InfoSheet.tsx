@@ -130,7 +130,7 @@ export function InfoSheet({
                     skull (top-left on the board, long-press): wipes the board and clears the counter
                     with a death animation.
                     {presetId === 'krenko'
-                      ? ' If Krenko is present, skull hold opens a choice: wipe all or remove only Krenko (goblins stay).'
+                      ? ' If Krenko is present, skull hold opens a choice: destroy all goblins, remove only Krenko (goblins stay), or cancel.'
                       : null}
                   </li>
                   {presetId === 'krenko' ? (

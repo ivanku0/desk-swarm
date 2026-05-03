@@ -588,7 +588,7 @@ export function TrackScreen({
         <div className="modal-backdrop" role="dialog" aria-labelledby="modal-wipe-choice-title">
           <div className="modal modal--confirm">
             <p id="modal-wipe-choice-title" className="modal-confirm-title">
-              skull action
+              wipe the board?
             </p>
             <div className="modal-actions modal-actions--stack">
               <button
@@ -599,7 +599,7 @@ export function TrackScreen({
                   startWipeSequence(countRef.current)
                 }}
               >
-                wipe all
+                destroy all goblins
               </button>
               <button
                 type="button"
