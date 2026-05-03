@@ -3,7 +3,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { PresetId } from '../presets/types'
 import { ActivityDrawer } from './ActivityDrawer'
 import type { ActivityEntry } from './ActivityLog'
-import { getCardBundle } from '../data/cardData'
 import { MENU_SLIDES } from './menuCharacters'
 
 const CAROUSEL_SWIPE_PX = 56
@@ -19,7 +18,6 @@ export function MainMenu({
   const touchX0 = useRef<number | null>(null)
 
   const slide = MENU_SLIDES[index]!
-  const cardBundle = slide.presetId ? getCardBundle(slide.presetId) : null
 
   const go = useCallback((delta: number) => {
     setIndex((i) => (i + delta + MENU_SLIDES.length) % MENU_SLIDES.length)
@@ -75,23 +73,12 @@ export function MainMenu({
               </div>
               <div className="char-tile__body">
                 <div className="char-tile__main">
-                  <div className="char-tile__titleRow">
-                    <h2 className="char-tile__name">{slide.cardName}</h2>
-                    {cardBundle?.manaDisplay ? (
-                      <span className="char-tile__manaText" aria-label={`mana cost ${cardBundle.manaDisplay}`}>
-                        {cardBundle.manaDisplay}
-                      </span>
+                  <h2 className="char-tile__name">{slide.cardName}</h2>
+                  <div className="char-tile__textBlock">
+                    <p className="char-tile__oracle">{slide.oracleText}</p>
+                    {slide.flavorText ? (
+                      <p className="char-tile__flavor">{slide.flavorText}</p>
                     ) : null}
-                  </div>
-                  <div className="char-tile__midRow">
-                    <div className="char-tile__midPrimary">
-                      <p className="char-tile__type">{slide.typeLine}</p>
-                      <p className="char-tile__oracle">{slide.oracleText}</p>
-                      {slide.flavorText ? (
-                        <p className="char-tile__flavor">{slide.flavorText}</p>
-                      ) : null}
-                    </div>
-                    <p className="char-tile__pt">{slide.ptLine}</p>
                   </div>
                 </div>
               </div>
