@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 import type { PresetId } from './presets/types'
 import { MainMenu } from './ui/MainMenu'
 import { TrackScreen } from './ui/TrackScreen'
@@ -11,15 +11,30 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+function subscribeReducedMotion(onChange: () => void) {
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
+}
+
+function reducedMotionSnapshot() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function reducedMotionServerSnapshot() {
+  return false
+}
+
 export default function App() {
   const [phase, setPhase] = useState<Phase>('menu')
   const [preset, setPreset] = useState<PresetId | null>(null)
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const [infoOpen, setInfoOpen] = useState(false)
 
-  const reducedMotion = useMemo(
-    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
-    [],
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    reducedMotionSnapshot,
+    reducedMotionServerSnapshot,
   )
 
   const appendActivity = useCallback((e: Omit<ActivityEntry, 'id' | 'at'>) => {

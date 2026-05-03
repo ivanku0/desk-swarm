@@ -17,6 +17,8 @@
   --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
   --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+  /* Peek height for fixed activity drawer tab + home indicator */
+  --activity-drawer-tab-h: calc(36px + env(safe-area-inset-bottom, 0px));
 }
 
 .preset-horde {

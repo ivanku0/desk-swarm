@@ -51,7 +51,8 @@ body {
   gap: 0;
   padding-top: env(safe-area-inset-top, 0px);
   /* Space for fixed stats tab peek; carousel/header do not resize when sheet opens */
-  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--activity-drawer-tab-h) + 14px);
+  scroll-padding-bottom: calc(var(--activity-drawer-tab-h) + 18px);
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
@@ -439,6 +440,50 @@ body {
   box-shadow: 0 3px 0 rgba(30, 48, 30, 0.18);
 }
 
+/* Main menu: keep CTA above fixed activity tab; cap card height on short phones */
+@media (max-width: 520px) {
+  .menu-hero {
+    flex: 0 1 auto;
+    padding-top: clamp(2px, 0.8dvh, 10px);
+  }
+
+  .menu-logotype {
+    font-size: clamp(0.95rem, 8.2vw, 1.65rem);
+  }
+
+  .menu-tagline {
+    margin-top: 6px;
+  }
+
+  .char-select {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .char-tile {
+    max-height: min(42dvh, 340px);
+  }
+
+  .char-select__card-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: clamp(4px, 1dvh, 12px) 0 clamp(2px, 0.8dvh, 10px);
+  }
+
+  .char-select__pager {
+    margin-top: clamp(6px, 1.2dvh, 16px);
+    margin-bottom: clamp(6px, 1.2dvh, 14px);
+  }
+
+  .char-select__cta {
+    touch-action: manipulation;
+  }
+
+  .activity-drawer__sheet {
+    height: min(68dvh, 480px);
+  }
+}
+
 .activity-drawer__backdrop {
   position: fixed;
   inset: 0;
@@ -451,7 +496,6 @@ body {
 }
 
 .activity-drawer__sheet {
-  --activity-drawer-tab-h: 38px;
   position: fixed;
   left: 0;
   right: 0;
@@ -459,7 +503,7 @@ body {
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
-  height: 75vh;
+  height: min(75dvh, 560px);
   z-index: 101;
   display: flex;
   flex-direction: column;
@@ -472,6 +516,8 @@ body {
   transition: transform 0.34s var(--ease-snap);
   pointer-events: auto;
   overflow: hidden;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .activity-drawer__sheet--open {
@@ -698,12 +744,10 @@ button.hero-panel--meter:focus-visible {
 @keyframes digit-meter-pop {
   0%,
   100% {
-    filter: brightness(1);
     transform: scale(1);
   }
   40% {
-    filter: brightness(1.2);
-    transform: scale(1.045);
+    transform: scale(1.055);
   }
 }
 
@@ -1147,10 +1191,28 @@ button.hero-panel--meter:focus-visible {
 @keyframes grow-btn-charged-glow {
   0%,
   100% {
-    filter: brightness(1) drop-shadow(0 0 3px rgba(120, 255, 150, 0.35));
+    box-shadow:
+      0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
+      0 0 0 0 transparent;
   }
   50% {
-    filter: brightness(1.07) drop-shadow(0 0 12px rgba(140, 255, 170, 0.55));
+    box-shadow:
+      0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
+      0 0 18px 5px color-mix(in srgb, var(--accent-positive) 45%, rgba(255, 255, 255, 0.55));
+  }
+}
+
+@keyframes grow-btn-charged-glow-horde {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 0 color-mix(in srgb, var(--accent-alt) 50%, #000),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 4px 0 color-mix(in srgb, var(--accent-alt) 50%, #000),
+      0 0 18px 5px color-mix(in srgb, var(--accent-alt) 50%, rgba(255, 255, 255, 0.5));
   }
 }
 
@@ -1161,24 +1223,30 @@ button.hero-panel--meter:focus-visible {
 @keyframes grow-btn-burst {
   0% {
     transform: scale(1);
-    filter: brightness(1);
   }
   40% {
     transform: scale(1.06);
-    filter: brightness(1.12);
   }
   100% {
     transform: scale(1);
-    filter: brightness(1);
   }
 }
 
 .track-screen--reduce-motion .grow-btn--charged {
   animation: none;
-  filter: none;
   box-shadow:
     0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
     0 0 0 2px color-mix(in srgb, var(--accent-positive) 45%, transparent);
+}
+
+.preset-horde .grow-btn--charged {
+  animation-name: grow-btn-charged-glow-horde;
+}
+
+.track-screen--reduce-motion.preset-horde .grow-btn--charged {
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--accent-alt) 50%, #000),
+    0 0 0 2px color-mix(in srgb, var(--accent-alt) 45%, transparent);
 }
 
 .preset-horde .grow-btn {
