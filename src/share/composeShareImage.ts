@@ -42,11 +42,13 @@ export async function composeShareImage(
   ctx.fillStyle = accent
   ctx.fillText(formatCount(count), pad, fieldH + pad + 150)
   ctx.fillStyle = ink
-  ctx.font = '28px system-ui, sans-serif'
-  ctx.fillText('math is for blockers.', pad, H - pad - 120)
+  ctx.font = 'bold 26px system-ui, sans-serif'
+  ctx.fillText('Desk Swarm', pad, H - pad - 148)
   ctx.font = '22px system-ui, sans-serif'
+  ctx.fillText('Math is for blockers. Track tokens fast.', pad, H - pad - 118)
+  ctx.font = '20px system-ui, sans-serif'
   ctx.fillStyle = '#4a5c46'
-  ctx.fillText('casual tracker — not affiliated with wizards of the coast.', pad, H - pad - 70)
+  ctx.fillText('casual tracker — not affiliated with wizards of the coast.', pad, H - pad - 72)
   return new Promise((resolve) =>
     canvas.toBlob((b) => resolve(b), 'image/png', 0.92),
   )
