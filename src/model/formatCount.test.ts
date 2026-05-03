@@ -1,17 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { formatCount, formatCountMeter } from './formatCount'
+import { formatCountMeter } from './formatCount'
 
 describe('formatCountMeter', () => {
   it('pads with leading zeros up to meter width', () => {
-    expect(formatCountMeter(124n)).toBe('000000000124')
+    expect(formatCountMeter(124n)).toBe('00124')
   })
 
   it('pads single digit', () => {
-    expect(formatCountMeter(1n)).toBe('000000000001')
+    expect(formatCountMeter(1n)).toBe('00001')
   })
 
-  it('falls back to compact form when wider than meter slots', () => {
+  it('uses full five digits through 99999', () => {
+    expect(formatCountMeter(99999n)).toBe('99999')
+  })
+
+  it('switches to compact suffix display above 99999', () => {
+    expect(formatCountMeter(100000n)).toBe('100K')
+    expect(formatCountMeter(1_234_567n)).toBe('1M')
+  })
+
+  it('never exceeds meter slot count', () => {
     const wide = BigInt('1' + '0'.repeat(20))
-    expect(formatCountMeter(wide)).toBe(formatCount(wide))
+    expect(formatCountMeter(wide).length).toBeLessThanOrEqual(5)
   })
 })

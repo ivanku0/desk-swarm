@@ -728,13 +728,12 @@ button.hero-panel--meter:focus-visible {
 .digit-meter {
   display: flex;
   flex-wrap: nowrap;
-  justify-content: flex-end;
+  justify-content: stretch;
   align-items: stretch;
-  gap: 6px 8px;
+  gap: 5px;
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
 }
 
 .digit-meter--bump .digit-cell {
@@ -757,10 +756,11 @@ button.hero-panel--meter:focus-visible {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  flex: 0 0 auto;
-  min-width: clamp(46px, 15.5vw, 82px);
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
   min-height: clamp(72px, 20vw, 112px);
-  padding: 8px 6px;
+  padding: 8px 4px;
   border: 2px solid #0a140c;
   border-radius: 2px;
   background: linear-gradient(180deg, #0f2212 0%, #1a331e 40%, #142a18 100%);
@@ -769,7 +769,7 @@ button.hero-panel--meter:focus-visible {
     inset 0 2px 0 rgba(255, 255, 255, 0.1),
     inset 0 -4px 0 rgba(0, 0, 0, 0.55),
     0 1px 0 rgba(255, 255, 255, 0.25);
-  font-size: clamp(0.92rem, 8.8vw, 1.72rem);
+  font-size: clamp(0.62rem, 5.4vw, 1.42rem);
   line-height: 1;
   letter-spacing: 0.02em;
   text-shadow: 0 0 2px rgba(100, 220, 130, 0.35);
@@ -783,15 +783,14 @@ button.hero-panel--meter:focus-visible {
 }
 
 .digit-cell--dot {
-  min-width: clamp(22px, 6.8vw, 38px);
-  padding-left: 3px;
-  padding-right: 3px;
-  font-size: clamp(0.68rem, 5.8vw, 1.08rem);
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: clamp(0.55rem, 4.8vw, 1.12rem);
 }
 
 .digit-cell--suffix {
-  min-width: clamp(38px, 12vw, 66px);
   text-transform: none;
+  font-size: clamp(0.52rem, 4.5vw, 1.05rem);
 }
 
 .field-wrap {

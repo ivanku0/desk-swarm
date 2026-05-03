@@ -1,7 +1,7 @@
 const SUFFIX = ['', 'k', 'm', 'b', 't', 'qa', 'qi', 'sx', 'sp', 'oc', 'no', 'de']
 
-/** Fixed-width gas-pump columns (leading zeros). */
-export const METER_SLOT_COUNT = 12
+/** LCD meter character slots (digits + optional dot / suffix). */
+export const METER_SLOT_COUNT = 5
 
 /** Display BigInt with suffixes for very large values */
 export function formatCount(n: bigint): string {
@@ -19,10 +19,19 @@ export function formatCount(n: bigint): string {
   return `${rounded}${SUFFIX[tier]}`
 }
 
-/** Fixed-width gas-pump style (leading zeros); wider values use compact `formatCount`. */
+/** Uppercase trailing suffix letters (k→K) for the pixel meter. */
+function meterCompactDisplay(compact: string): string {
+  return compact.replace(/[a-z]+$/, (w) => w.toUpperCase())
+}
+
+/**
+ * Up to five fixed columns: values 0…99999 as leading-zero digits; larger values use
+ * the same compact tiers as `formatCount` (K/M/…), capped at `METER_SLOT_COUNT` chars.
+ */
 export function formatCountMeter(n: bigint): string {
   if (n < 0n) return '0'.repeat(METER_SLOT_COUNT)
-  const s = n.toString()
-  if (s.length > METER_SLOT_COUNT) return formatCount(n)
-  return s.padStart(METER_SLOT_COUNT, '0')
+  if (n <= 99999n) return n.toString().padStart(METER_SLOT_COUNT, '0')
+  let s = meterCompactDisplay(formatCount(n))
+  if (s.length > METER_SLOT_COUNT) s = s.slice(0, METER_SLOT_COUNT)
+  return s
 }
