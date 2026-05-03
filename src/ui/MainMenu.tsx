@@ -83,13 +83,17 @@ export function MainMenu({
                       </span>
                     ) : null}
                   </div>
-                  <p className="char-tile__type">{slide.typeLine}</p>
-                  <p className="char-tile__pt">{slide.ptLine}</p>
-                  <p className="char-tile__oracle">{slide.oracleText}</p>
+                  <div className="char-tile__midRow">
+                    <div className="char-tile__midPrimary">
+                      <p className="char-tile__type">{slide.typeLine}</p>
+                      <p className="char-tile__oracle">{slide.oracleText}</p>
+                      {slide.flavorText ? (
+                        <p className="char-tile__flavor">{slide.flavorText}</p>
+                      ) : null}
+                    </div>
+                    <p className="char-tile__pt">{slide.ptLine}</p>
+                  </div>
                 </div>
-                {slide.flavorText ? (
-                  <p className="char-tile__flavor">{slide.flavorText}</p>
-                ) : null}
               </div>
             </article>
           </div>

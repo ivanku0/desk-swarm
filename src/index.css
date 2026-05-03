@@ -171,7 +171,7 @@ body {
 /* ~Magic card proportion: 63mm × 88mm → width / height = 63/88 */
 .char-tile {
   flex: 0 0 auto;
-  width: min(100%, calc(100vw - 32px), 340px);
+  width: min(100%, calc(100vw - 24px), 360px);
   aspect-ratio: 63 / 88;
   max-height: min(62dvh, 520px);
   min-width: 0;
@@ -290,6 +290,25 @@ body {
   gap: 9px;
 }
 
+/* Rules + flavor in the left column; P/T on the right (Magic-style) so flavor never runs under stats on narrow screens. */
+.char-tile__midRow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.char-tile__midPrimary {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
 .char-tile__titleRow {
   display: flex;
   flex-direction: row;
@@ -331,10 +350,16 @@ body {
 }
 
 .char-tile__pt {
+  flex: 0 0 auto;
+  align-self: flex-end;
   margin: 0;
+  padding-bottom: 2px;
   font-family: var(--font-pixel);
   font-size: clamp(0.56rem, 3.2vw, 0.76rem);
   letter-spacing: 0.06em;
+  line-height: 1.15;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .char-tile__oracle {
