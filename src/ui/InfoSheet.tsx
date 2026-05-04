@@ -119,11 +119,10 @@ export function InfoSheet({
                   <li>
                     <strong>{presetId === 'krenko' ? 'Cast Krenko / Krenk It' : p.growLabel}</strong>{' '}
                     {presetId === 'scute'
-                      ? 'adds +1 from 1 through 6, then doubles from 7 onward; at zero it creates a new one and sets the count to 1.'
+                      ? 'doubles your counter when it is above zero (we assume you already have six or more lands, so each trigger is a copy—not a lone 1/1 Insect); at zero it creates a new one and sets the count to 1.'
                       : presetId === 'krenko'
                         ? 'Cast Krenko summons the boss from an empty board (count 1) or adds him (+1 goblin). After that, Krenk It doubles your total while the count is above zero.'
-                        : 'doubles your counter when it is above zero; at zero it creates a new one and sets the count to 1.'}{' '}
-                    (casual commander toy—not comprehensive rules).
+                        : 'doubles your counter when it is above zero; at zero it creates a new one and sets the count to 1.'}
                   </li>
                   <li>
                     undo (curved arrow), −, and + adjust the count; − / + flash −1 or +1 above the

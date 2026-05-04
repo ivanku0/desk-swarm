@@ -1186,7 +1186,7 @@ button.hero-panel--meter:focus-visible {
   box-shadow: 0 2px 0 color-mix(in srgb, var(--border-strong) 52%, #000);
 }
 
-/* Wraps grow CTA; Scute @6 uses fill shimmer (no border trace) */
+/* Wraps grow CTA */
 .grow-btn-slot {
   flex: 1 1 0;
   min-width: 0;
@@ -1237,78 +1237,22 @@ button.hero-panel--meter:focus-visible {
   line-height: 1;
 }
 
+/* Scute: one-time tonal reminder under CTA (dismissed after first grow) */
+.grow-btn__subtitle--scute-lands-hint {
+  max-width: 16rem;
+  margin-inline: auto;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  line-height: 1.2;
+  color: color-mix(in srgb, #f4fff6 58%, var(--accent-positive));
+  opacity: 0.88;
+  text-wrap: balance;
+}
+
 .grow-btn--charged {
   animation: grow-btn-charged-glow 1.15s ease-in-out infinite;
-}
-
-/* Next tap doubles (6 → 7): highlight sweeps on fill — stays in mid-greens for contrast with white type */
-.grow-btn-slot--scute-warn .grow-btn--charged {
-  overflow: hidden;
-  background-color: var(--accent-positive);
-  background-image: linear-gradient(
-    118deg,
-    var(--accent-positive) 0%,
-    color-mix(in srgb, var(--accent-positive) 82%, #b8dcc0) 28%,
-    color-mix(in srgb, var(--accent-positive) 72%, #aed4b6) 50%,
-    color-mix(in srgb, var(--accent-positive) 82%, #b8dcc0) 72%,
-    var(--accent-positive) 100%
-  );
-  background-size: 260% 260%;
-  color: #f6fff8;
-  text-shadow:
-    0 1px 0 rgba(6, 22, 10, 0.95),
-    0 2px 10px rgba(6, 32, 14, 0.55),
-    0 0 1px rgba(6, 22, 10, 0.9);
-  animation:
-    grow-btn-charged-glow 0.72s ease-in-out infinite,
-    grow-btn-scute-fill-wave 2.8s ease-in-out infinite;
-}
-
-.grow-btn-slot--scute-warn .grow-btn--charged .grow-btn__subtitle {
-  color: #eef8f0;
-  text-shadow:
-    0 1px 0 rgba(6, 22, 10, 0.9),
-    0 0 8px rgba(6, 32, 14, 0.45);
-}
-
-@keyframes grow-btn-scute-fill-wave {
-  0%,
-  100% {
-    background-position: 8% 50%;
-  }
-  50% {
-    background-position: 92% 50%;
-  }
-}
-
-.track-screen--reduce-motion .grow-btn-slot--scute-warn .grow-btn--charged {
-  animation: none;
-  background-size: 100% 100%;
-  background-image: linear-gradient(
-    118deg,
-    var(--accent-positive) 0%,
-    color-mix(in srgb, var(--accent-positive) 78%, #c0e0c4) 52%,
-    var(--accent-positive) 100%
-  );
-  box-shadow:
-    0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
-    0 0 0 2px color-mix(in srgb, var(--accent-positive) 42%, rgba(255, 255, 255, 0.35));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .grow-btn-slot--scute-warn .grow-btn--charged {
-    animation: none;
-    background-size: 100% 100%;
-    background-image: linear-gradient(
-      118deg,
-      var(--accent-positive) 0%,
-      color-mix(in srgb, var(--accent-positive) 78%, #c0e0c4) 52%,
-      var(--accent-positive) 100%
-    );
-    box-shadow:
-      0 4px 0 color-mix(in srgb, var(--accent-positive) 55%, #000),
-      0 0 0 2px color-mix(in srgb, var(--accent-positive) 42%, rgba(255, 255, 255, 0.35));
-  }
 }
 
 @keyframes grow-btn-charged-glow {
@@ -1336,22 +1280,6 @@ button.hero-panel--meter:focus-visible {
     box-shadow:
       0 4px 0 color-mix(in srgb, var(--accent-alt) 50%, #000),
       0 0 18px 5px color-mix(in srgb, var(--accent-alt) 50%, rgba(255, 255, 255, 0.5));
-  }
-}
-
-.grow-btn--burst {
-  animation: grow-btn-burst 0.48s ease-out;
-}
-
-@keyframes grow-btn-burst {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.06);
-  }
-  100% {
-    transform: scale(1);
   }
 }
 
