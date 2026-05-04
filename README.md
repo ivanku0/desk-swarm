@@ -27,6 +27,12 @@ If you only ever need “how many Scutes” or “how big is the Horde,” this 
 
 ---
 
+## Favicon & link previews
+
+The tab icon, `apple-touch-icon`, PWA manifest icons, and Open Graph / Twitter preview image point at **`/art/scute/token-ref.png`** (same asset as the in-app Scute token). Browsers scale it; crawlers resolve `/…` URLs against your deployed origin (for example `https://example.pages.dev`).
+
+To use **Krenko** instead, change those paths in **`index.html`** and **`public/manifest.webmanifest`** to e.g. **`/art/krenko/leader-ref.png`** (boss art used on the menu). For best “Add to Home Screen” tiles, you can later add dedicated square PNGs (192×192 / 512×512) generated from that art.
+
 ## Tech stack
 
 - **React 19** + **TypeScript**

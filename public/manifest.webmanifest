@@ -8,6 +8,18 @@
   "theme_color": "#c8d9c4",
   "icons": [
     {
+      "src": "/art/scute/token-ref.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/art/scute/token-ref.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",

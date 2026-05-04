@@ -81,7 +81,13 @@ export function InfoSheet({
             {tab === 'oracle' ? (
               <>
                 <p className="info-sheet__oracle">{card.oracleText}</p>
-                {card.flavorText ? (
+                {card.flavorQuotes && card.flavorQuotes.length > 0 ? (
+                  card.flavorQuotes.map((q, i) => (
+                    <p key={i} className="info-sheet__flavor">
+                      {q}
+                    </p>
+                  ))
+                ) : card.flavorText ? (
                   <p className="info-sheet__flavor">{card.flavorText}</p>
                 ) : null}
                 <p className="info-sheet__ptInline">{ptCompact}</p>

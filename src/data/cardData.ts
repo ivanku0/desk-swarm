@@ -13,11 +13,19 @@ export interface CardBundle {
   powerToughness: string
   oracleText: string
   flavorText: string | null
+  /** Optional extra flavor lines (e.g. menu easter egg when more than one). */
+  flavorQuotes?: readonly string[]
   scryfallUrl: string
   gathererUrl: string
   /** Wizards Gatherer rulings text via Scryfall rulings API */
   rulings: readonly string[]
 }
+
+const SCUTE_FLAVOR_QUOTES = [
+  '"Survival rule 782: There are *always* more scute bugs."\n—Zurdi, goblin shortcutter',
+  '"The humble scute is sculpted from the very earth itself."',
+  '"Survival rule 781: There are always more scute bugs."\n—Zurdi, goblin shortcutter',
+] as const
 
 const SCUTE: CardBundle = {
   presetId: 'scute',
@@ -27,8 +35,8 @@ const SCUTE: CardBundle = {
   powerToughness: '1 / 1',
   oracleText:
     'Landfall — Whenever a land you control enters, create a 1/1 green Insect creature token. If you control six or more lands, create a token that\'s a copy of this creature instead.',
-  flavorText:
-    '"Survival rule 782: There are *always* more scute bugs."\n—Zurdi, goblin shortcutter',
+  flavorText: SCUTE_FLAVOR_QUOTES[0]!,
+  flavorQuotes: SCUTE_FLAVOR_QUOTES,
   scryfallUrl: 'https://scryfall.com/card/dsc/197/scute-swarm',
   gathererUrl:
     'https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=676070&printed=false',
@@ -42,6 +50,13 @@ const SCUTE: CardBundle = {
   ],
 }
 
+const HORDE_FLAVOR_QUOTES = [
+  '"*That* is why you triple-check all decimals when commissioning a new batch of homunculi!"\n—Trigori, Azorius senator',
+  '"In terms of intelligence, homunculi are somewhere between humans and skaabs—clever enough to follow more complex orders, but dim enough to not question them."\n—Stitcher Geralf',
+  '"Keep watch only for the giants and you\'ll be eaten by the ants."',
+  '"They hide in dreams and whispers and faraway thoughts."',
+] as const
+
 const HORDE: CardBundle = {
   presetId: 'horde',
   cardName: 'Homunculus Horde',
@@ -50,8 +65,8 @@ const HORDE: CardBundle = {
   powerToughness: '2 / 2',
   oracleText:
     "Whenever you draw your second card each turn, create a token that's a copy of this creature.",
-  flavorText:
-    '"*That* is why you triple-check all decimals when commissioning a new batch of homunculi!"\n—Trigori, Azorius senator',
+  flavorText: HORDE_FLAVOR_QUOTES[0]!,
+  flavorQuotes: HORDE_FLAVOR_QUOTES,
   scryfallUrl: 'https://scryfall.com/card/fdn/41/homunculus-horde',
   gathererUrl:
     'https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=679118&printed=false',
@@ -64,6 +79,12 @@ const HORDE: CardBundle = {
   ],
 }
 
+const KRENKO_FLAVOR_QUOTES = [
+  '"He displays a perverse charisma fueled by avarice. Highly dangerous. Recommend civil sanctions."\n—Agmand Sarv, Azorius hussar',
+  '"Threats? Extortion? Good sir, you have me all wrong. I am a legitimate businessman; my colleagues and I are simply here to conduct legitimate business."',
+  `"After the people flee, but before the enemy arrives—that's grabbin' time."`,
+] as const
+
 const KRENKO: CardBundle = {
   presetId: 'krenko',
   cardName: 'Krenko, Mob Boss',
@@ -72,8 +93,8 @@ const KRENKO: CardBundle = {
   powerToughness: '3 / 3',
   oracleText:
     'Tap: Create X 1/1 red Goblin creature tokens, where X is the number of Goblins you control.',
-  flavorText:
-    '"You built a city full of people who need jobs. I built a city full of people who need work done."\n—Krenko, *The Labor Relations Codex*',
+  flavorText: KRENKO_FLAVOR_QUOTES[0]!,
+  flavorQuotes: KRENKO_FLAVOR_QUOTES,
   scryfallUrl: 'https://scryfall.com/card/m13/138/krenko-mob-boss',
   gathererUrl:
     'https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=253536&printed=false',
