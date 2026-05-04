@@ -1549,6 +1549,31 @@ button.hero-panel--meter:focus-visible {
   background: #e4ebe4;
 }
 
+.replacement-lab-info__header {
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 10px 14px;
+}
+
+.replacement-lab-info__title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: clamp(0.82rem, 3vw, 1rem);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.replacement-lab-info__closeBtn {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-left: none;
+  border-radius: 8px;
+}
+
 .info-sheet__row {
   border-bottom: 1px solid #e2e6e2;
   padding: 11px 14px;
@@ -1880,15 +1905,23 @@ button.hero-panel--meter:focus-visible {
 .char-tile--lab {
   background: linear-gradient(
     165deg,
-    color-mix(in srgb, var(--accent-alt) 28%, #f4f6ff) 0%,
-    color-mix(in srgb, var(--surface-panel) 40%, #e2e6f0) 55%,
-    color-mix(in srgb, var(--accent-alt) 22%, #d8dce8) 100%
+    color-mix(in srgb, var(--accent-positive) 26%, #f4fff6) 0%,
+    color-mix(in srgb, var(--surface-panel) 45%, #e6f1e6) 56%,
+    color-mix(in srgb, var(--accent-positive) 22%, #d4e4d5) 100%
   );
-  color: #151a28;
+  color: #102617;
 }
 
 .char-tile--lab .char-tile__swatch {
-  background: #4a5a8a;
+  background: #4f8960;
+}
+
+.char-tile--lab .char-tile__swatchSprite {
+  width: auto;
+  height: 130%;
+  max-width: none;
+  top: 58%;
+  opacity: 0.95;
 }
 
 .replacement-lab {
@@ -1909,6 +1942,11 @@ button.hero-panel--meter:focus-visible {
 }
 
 .replacement-lab__back {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.replacement-lab__info {
   flex: 0 0 auto;
   margin-top: 2px;
 }
@@ -1940,8 +1978,87 @@ button.hero-panel--meter:focus-visible {
   padding: 12px 14px;
 }
 
+.replacement-lab__panel--recipe {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 .replacement-lab__panel--meter {
-  text-align: center;
+  text-align: left;
+}
+
+.replacement-lab__meterHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 6px;
+}
+
+.replacement-lab__meterTitle {
+  margin: 0;
+  flex: 1 1 12rem;
+  min-width: 0;
+  text-align: left;
+}
+
+.replacement-lab__meterToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.replacement-lab__toolbarBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 2px solid color-mix(in srgb, var(--accent-positive) 42%, #000);
+  background: color-mix(in srgb, var(--accent-positive) 76%, #9ac4a0);
+  color: #122615;
+  cursor: pointer;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--accent-positive) 36%, #000);
+}
+
+.replacement-lab__toolbarBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.replacement-lab__toolbarBtn:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent-positive) 36%, #000);
+}
+
+.replacement-lab__toolbarBtn--optimized {
+  color: #0e2411;
+}
+
+.replacement-lab__toolbarBtn--secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-width: 42px;
+  background: var(--surface-app);
+  color: var(--ink);
+  border-color: var(--border-strong);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--border-strong) 55%, #000);
+}
+
+.replacement-lab__toolbarBtn--secondary:not(:disabled):active {
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--border-strong) 55%, #000);
 }
 
 .replacement-lab__h2 {
@@ -1958,6 +2075,77 @@ button.hero-panel--meter:focus-visible {
   font-size: 0.82rem;
   color: var(--ink-muted);
   line-height: 1.35;
+}
+
+/* Starting tokens: title + hint + fields stay left; Chatterfang fills column height, facing left */
+.replacement-lab__recipeLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, clamp(104px, 22vw, 152px));
+  gap: 10px 14px;
+  align-items: center;
+}
+
+.replacement-lab__recipeMain {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-items: flex-start;
+  align-self: start;
+}
+
+.replacement-lab__recipeMain .replacement-lab__h2 {
+  margin: 0 0 4px;
+}
+
+.replacement-lab__recipeHint {
+  margin: 0 0 8px;
+}
+
+.replacement-lab__recipeAvatar {
+  margin: 0;
+  padding: 0;
+  align-self: center;
+  justify-self: stretch;
+  width: 100%;
+  max-height: clamp(112px, 32dvh, 196px);
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.replacement-lab__chatterfangImg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: clamp(112px, 32dvh, 196px);
+  object-fit: contain;
+  object-position: center bottom;
+  transform: scaleX(-1);
+  image-rendering: crisp-edges;
+}
+
+@media (max-width: 520px) {
+  .replacement-lab__recipeLayout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .replacement-lab__recipeAvatar {
+    max-height: min(152px, 40vw);
+    margin-top: 2px;
+  }
+
+  .replacement-lab__chatterfangImg {
+    height: auto;
+    max-height: min(152px, 40vw);
+    width: min(168px, 55vw);
+    object-position: center;
+  }
 }
 
 .replacement-lab__recipeRow {
@@ -2009,10 +2197,18 @@ button.hero-panel--meter:focus-visible {
   margin: 8px 0 4px;
 }
 
-.replacement-lab__deltaLine {
-  margin: 0;
+.replacement-lab__totalFootnote {
+  margin: 8px 0 0;
   font-size: 0.85rem;
   color: var(--ink-muted);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.replacement-lab__logRow--seed {
+  border-color: color-mix(in srgb, var(--accent-positive) 46%, var(--border-strong));
+  background: color-mix(in srgb, var(--surface-app) 70%, #eef8ea);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-positive) 22%, transparent);
 }
 
 .replacement-lab__slotList {
@@ -2111,11 +2307,47 @@ button.hero-panel--meter:focus-visible {
 
 .replacement-lab__logHead {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
   font-size: 0.88rem;
+}
+
+.replacement-lab__logTitle {
+  font-weight: 800;
+  line-height: 1.35;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.replacement-lab__logBeforeAfter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replacement-lab__logPair {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.replacement-lab__logPairLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+}
+
+.replacement-lab__logPairValue {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink);
+  word-break: break-word;
 }
 
 .replacement-lab__badge {
@@ -2129,15 +2361,3 @@ button.hero-panel--meter:focus-visible {
   color: var(--ink);
 }
 
-.replacement-lab__logLine {
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
-.replacement-lab__deltaBadge {
-  display: inline-block;
-  margin-left: 4px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--accent-positive);
-}

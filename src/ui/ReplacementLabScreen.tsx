@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   TOKEN_INCREASER_CATALOG,
   archetypeDisplayName,
@@ -25,41 +25,30 @@ import {
   type TokenIncreaserCard,
 } from '../data/tokenIncreaserCatalog'
 import { DigitMeter } from './DigitMeter'
-import { IconBackToMenu } from './trackIcons'
+import { IconBackToMenu, IconInfo, IconUndo } from './trackIcons'
+import { optimizeReplacementSlots, slotsEqual } from '../model/replacementLabOptimize'
+import { buildChainFromSlots } from '../model/replacementLabSlots'
 import {
-  archetypeIdToEffectKey,
+  TOKEN_ATOMS,
   formatEventSummary,
   runChain,
   singleAtomEvent,
   sumTokens,
-  type ChainStep,
   type TokenAtom,
   type TokenEvent,
 } from '../model/replacementChain'
+import { ReplacementLabInfoSheet } from './ReplacementLabInfoSheet'
 
 const SLOT_COUNT = 5
-const RECIPE_ATOMS: readonly TokenAtom[] = ['Clue', 'Food', 'Treasure', 'Squirrel', 'Soldier']
+const RECIPE_ATOMS: readonly TokenAtom[] = TOKEN_ATOMS
+
+/** Chatterfang pixel mascot — lives in `public/art/replacement-lab/`. */
+const REPLACEMENT_LAB_CHATTERFANG_URL = `${import.meta.env.BASE_URL}art/replacement-lab/chatterfang-avatar.png`
 
 function parseRecipeCount(raw: string): bigint {
   const n = Number.parseInt(raw, 10)
   if (!Number.isFinite(n) || n < 0) return 0n
   return BigInt(Math.min(999, n))
-}
-
-function buildChainFromSlots(
-  slots: readonly (string | null)[],
-  byId: ReadonlyMap<string, TokenIncreaserCard>,
-): ChainStep[] {
-  const out: ChainStep[] = []
-  for (const id of slots) {
-    if (!id) continue
-    const card = byId.get(id)
-    if (!card?.implementsRunChain) continue
-    const effectKey = archetypeIdToEffectKey(card.archetypeId)
-    if (!effectKey) continue
-    out.push({ effectKey, displayLabel: card.name })
-  }
-  return out
 }
 
 function SortableSlotRow({
@@ -107,7 +96,18 @@ export function ReplacementLabScreen({
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     Array.from({ length: SLOT_COUNT }, () => null),
   )
+  /** Snapshot of slots before last Optimize (for toolbar undo). */
+  const [slotsBeforeOptimize, setSlotsBeforeOptimize] = useState<(string | null)[] | null>(null)
+  const [infoOpen, setInfoOpen] = useState(false)
   const [pulseKey, setPulseKey] = useState(0)
+
+  const clearOptimizeUndo = useCallback(() => {
+    setSlotsBeforeOptimize(null)
+  }, [])
+
+  useEffect(() => {
+    clearOptimizeUndo()
+  }, [recipeAtom, recipeCountStr, clearOptimizeUndo])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -137,7 +137,7 @@ export function ReplacementLabScreen({
     return [...m.entries()].sort(([a], [b]) => a.localeCompare(b))
   }, [filteredCatalog])
 
-  const chain = useMemo(() => buildChainFromSlots(slots, catalogById), [slots, catalogById])
+  const { chain } = useMemo(() => buildChainFromSlots(slots, catalogById), [slots, catalogById])
 
   const chainResult = useMemo(() => runChain(recipe, chain), [recipe, chain])
 
@@ -162,9 +162,10 @@ export function ReplacementLabScreen({
         return
       }
       setSlots((s) => arrayMove([...s], oldIndex, newIndex))
+      clearOptimizeUndo()
       bumpMeter()
     },
-    [bumpMeter],
+    [bumpMeter, clearOptimizeUndo],
   )
 
   const setSlotCard = useCallback(
@@ -174,9 +175,10 @@ export function ReplacementLabScreen({
         next[slotIndex] = scryfallId
         return next
       })
+      clearOptimizeUndo()
       bumpMeter()
     },
-    [bumpMeter],
+    [bumpMeter, clearOptimizeUndo],
   )
 
   const moveSlot = useCallback(
@@ -184,13 +186,40 @@ export function ReplacementLabScreen({
       const j = i + dir
       if (j < 0 || j >= SLOT_COUNT) return
       setSlots((s) => arrayMove([...s], i, j))
+      clearOptimizeUndo()
       bumpMeter()
     },
-    [bumpMeter],
+    [bumpMeter, clearOptimizeUndo],
   )
 
+  const doOptimize = useCallback(() => {
+    const snapshot = [...slots]
+    const next = optimizeReplacementSlots(snapshot, recipe, catalogById)
+    if (slotsEqual(snapshot, next)) return
+    setSlotsBeforeOptimize(snapshot)
+    setSlots(next)
+    bumpMeter()
+  }, [slots, recipe, catalogById, bumpMeter])
+
+  const doUndoOptimize = useCallback(() => {
+    if (!slotsBeforeOptimize) return
+    setSlots([...slotsBeforeOptimize])
+    setSlotsBeforeOptimize(null)
+    bumpMeter()
+  }, [slotsBeforeOptimize, bumpMeter])
+
+  const filledSlotCount = slots.filter((id) => id != null && id !== '').length
+  const optimalSlots = useMemo(
+    () =>
+      filledSlotCount >= 2
+        ? optimizeReplacementSlots(slots, recipe, catalogById)
+        : [...slots],
+    [slots, recipe, catalogById, filledSlotCount],
+  )
+  const isAlreadyOptimized = filledSlotCount >= 2 && slotsEqual(slots, optimalSlots)
+  const optimizeDisabled = filledSlotCount < 2 || slotsBeforeOptimize !== null || isAlreadyOptimized
+
   const totalFinal = sumTokens(chainResult.final)
-  const totalInitial = sumTokens(recipe)
 
   return (
     <div className="screen replacement-lab">
@@ -200,59 +229,87 @@ export function ReplacementLabScreen({
         </button>
         <div className="replacement-lab__headerText">
           <h1 className="replacement-lab__title">replacement lab</h1>
-          <p className="replacement-lab__subtitle">Token-only teaching chain (CR-style ordering).</p>
+          <p className="replacement-lab__subtitle">Make replacement effects easier to track.</p>
         </div>
+        <button
+          type="button"
+          className="replacement-lab__info icon-btn"
+          onClick={() => setInfoOpen(true)}
+          aria-label="Open replacement lab info"
+        >
+          <IconInfo />
+        </button>
       </header>
 
-      <section className="replacement-lab__panel" aria-labelledby="recipe-heading">
-        <h2 id="recipe-heading" className="replacement-lab__h2">
-          1 — initial tokens (E₀)
-        </h2>
-        <p className="replacement-lab__hint">One kind × count (no mixed batches in MVP).</p>
-        <div className="replacement-lab__recipeRow">
-          <label className="replacement-lab__label">
-            Kind
-            <select
-              className="replacement-lab__select"
-              value={recipeAtom}
-              onChange={(e) => {
-                setRecipeAtom(e.target.value as TokenAtom)
-                bumpMeter()
-              }}
-            >
-              {RECIPE_ATOMS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="replacement-lab__label">
-            Count
-            <input
-              className="replacement-lab__input"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={3}
-              value={recipeCountStr}
-              onChange={(e) => {
-                setRecipeCountStr(e.target.value.replace(/\D/g, '').slice(0, 3))
-                bumpMeter()
-              }}
-              aria-label="Token count for initial recipe"
+      <section
+        className="replacement-lab__panel replacement-lab__panel--recipe"
+        aria-labelledby="recipe-heading"
+      >
+        <div className="replacement-lab__recipeLayout">
+          <div className="replacement-lab__recipeMain">
+            <h2 id="recipe-heading" className="replacement-lab__h2">
+              1 — Starting tokens
+            </h2>
+            <p className="replacement-lab__hint replacement-lab__recipeHint">
+              Choose a token and how many you would create—that single batch kicks off the chain. One token
+              type at a time.
+            </p>
+            <div className="replacement-lab__recipeRow">
+              <label className="replacement-lab__label">
+                Token
+                <select
+                  className="replacement-lab__select"
+                  value={recipeAtom}
+                  onChange={(e) => {
+                    setRecipeAtom(e.target.value as TokenAtom)
+                    bumpMeter()
+                  }}
+                  aria-label="Token type for the starting batch"
+                >
+                  {RECIPE_ATOMS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="replacement-lab__label">
+                Count
+                <input
+                  className="replacement-lab__input"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={3}
+                  value={recipeCountStr}
+                  onChange={(e) => {
+                    setRecipeCountStr(e.target.value.replace(/\D/g, '').slice(0, 3))
+                    bumpMeter()
+                  }}
+                  aria-label="How many of that token for the starting batch"
+                />
+              </label>
+            </div>
+          </div>
+          <figure className="replacement-lab__recipeAvatar">
+            <img
+              src={REPLACEMENT_LAB_CHATTERFANG_URL}
+              width={200}
+              height={200}
+              className="replacement-lab__chatterfangImg"
+              alt="Chatterfang, Squirrel General"
+              decoding="async"
             />
-          </label>
+          </figure>
         </div>
-        <p className="replacement-lab__mono" aria-live="polite">
-          {formatEventSummary(recipe)}
-        </p>
       </section>
 
       <section className="replacement-lab__panel" aria-labelledby="chain-heading">
         <h2 id="chain-heading" className="replacement-lab__h2">
-          2 — replacement chain (max {SLOT_COUNT})
+          2 — Replacement chain (max {SLOT_COUNT})
         </h2>
-        <p className="replacement-lab__hint">Drag rows or use arrows. Only cards that apply to your E₀ are listed.</p>
+        <p className="replacement-lab__hint">
+          Drag rows or use arrows. Only cards that can apply to your starting batch are listed.
+        </p>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={[0, 1, 2, 3, 4].map(String)} strategy={verticalListSortingStrategy}>
@@ -306,48 +363,93 @@ export function ReplacementLabScreen({
         </DndContext>
       </section>
 
-      <section className="replacement-lab__panel replacement-lab__panel--meter" aria-live="polite">
-        <h2 className="replacement-lab__h2">Total tokens after chain</h2>
-        <div className="replacement-lab__meterWrap">
-          <DigitMeter value={totalFinal} pulseKey={pulseKey} reducedMotion={reducedMotion} />
-        </div>
-        <p className="replacement-lab__deltaLine">
-          Δ vs E₀:{' '}
-          <span className="replacement-lab__mono">
-            {totalFinal >= totalInitial ? '+' : ''}
-            {(totalFinal - totalInitial).toString()}
-          </span>
-        </p>
-      </section>
-
       <section className="replacement-lab__panel" aria-labelledby="log-heading">
         <h2 id="log-heading" className="replacement-lab__h2">
-          Step log
+          3 — Token generation log
         </h2>
-        {chainResult.steps.length === 0 ? (
-          <p className="replacement-lab__hint">Add replacements above, or leave slots empty for a no-op chain.</p>
-        ) : (
-          <ol className="replacement-lab__log">
-            {chainResult.steps.map((row, idx) => (
+        <ol className="replacement-lab__log">
+          <li className="replacement-lab__logRow replacement-lab__logRow--seed">
+            <div className="replacement-lab__logHead">
+              <strong className="replacement-lab__logTitle">1. Create tokens</strong>
+            </div>
+            <div className="replacement-lab__logBeforeAfter">
+              <div className="replacement-lab__logPair">
+                <span className="replacement-lab__logPairLabel">Tokens created</span>
+                <span className="replacement-lab__logPairValue">{formatEventSummary(recipe)}</span>
+              </div>
+            </div>
+          </li>
+          {chainResult.steps.map((row, idx) => {
+            const stepNum = idx + 2
+            return (
               <li key={idx} className="replacement-lab__logRow">
                 <div className="replacement-lab__logHead">
-                  <strong>{row.effectLabel}</strong>
+                  <strong className="replacement-lab__logTitle">
+                    {stepNum}. {row.effectLabel}
+                  </strong>
                   {row.didNotApply ? (
                     <span className="replacement-lab__badge">did not apply</span>
                   ) : null}
                 </div>
-                <div className="replacement-lab__mono replacement-lab__logLine">
-                  {row.beforeSummary} → {row.afterSummary}{' '}
-                  <span className="replacement-lab__deltaBadge">
-                    Δ {row.deltaTotal >= 0n ? '+' : ''}
-                    {row.deltaTotal.toString()} total
-                  </span>
+                <div className="replacement-lab__logBeforeAfter">
+                  <div className="replacement-lab__logPair">
+                    <span className="replacement-lab__logPairLabel">Tokens created</span>
+                    <span className="replacement-lab__logPairValue">{row.afterSummary}</span>
+                  </div>
                 </div>
               </li>
-            ))}
-          </ol>
-        )}
+            )
+          })}
+        </ol>
       </section>
+
+      <section className="replacement-lab__panel replacement-lab__panel--meter" aria-live="polite">
+        <div className="replacement-lab__meterHeader">
+          <h2 className="replacement-lab__h2 replacement-lab__meterTitle">4 — Total tokens generated</h2>
+          <div className="replacement-lab__meterToolbar">
+            <button
+              type="button"
+              className={`replacement-lab__toolbarBtn${
+                slotsBeforeOptimize !== null ? ' replacement-lab__toolbarBtn--optimized' : ''
+              }`}
+              onClick={doOptimize}
+              disabled={optimizeDisabled}
+              title={
+                filledSlotCount < 2
+                  ? 'Pick at least two replacements to reorder'
+                  : isAlreadyOptimized
+                    ? 'This chain is already at the maximum token total'
+                  : slotsBeforeOptimize
+                    ? 'Undo the last optimize to run it again'
+                    : 'Reorder the same cards for the highest total'
+              }
+            >
+              {isAlreadyOptimized || slotsBeforeOptimize !== null ? (
+                <>
+                  <Check size={16} strokeWidth={2.8} aria-hidden />
+                  Optimized
+                </>
+              ) : (
+                'Optimize'
+              )}
+            </button>
+            <button
+              type="button"
+              className="replacement-lab__toolbarBtn replacement-lab__toolbarBtn--secondary"
+              onClick={doUndoOptimize}
+              disabled={slotsBeforeOptimize === null}
+              title="Restore the chain order from before Optimize"
+              aria-label="Undo optimize"
+            >
+              <IconUndo />
+            </button>
+          </div>
+        </div>
+        <div className="replacement-lab__meterWrap">
+          <DigitMeter value={totalFinal} pulseKey={pulseKey} reducedMotion={reducedMotion} />
+        </div>
+      </section>
+      {infoOpen ? <ReplacementLabInfoSheet onClose={() => setInfoOpen(false)} /> : null}
     </div>
   )
 }

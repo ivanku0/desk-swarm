@@ -1,9 +1,11 @@
 /**
  * Token increaser catalog: `otag:token-increaser` (Scryfall) + archetype metadata.
- * `implementsRunChain` gates the Replacement Lab chain picker (v1: multiplier ×2, Manufactor, Chatterfang).
+ * `implementsRunChain` gates the Replacement Lab chain picker.
+ * `differentEvent` cards are listed for teaching but never run — they are not CR-style
+ * replacements on the same “would create” event as this lab models.
  */
 
-import { sumTokens, type TokenAtom } from '../model/replacementChain'
+import { sumTokens, type PlusFixedRiderFilter, type TokenAtom } from '../model/replacementChain'
 
 export type ArchetypeId =
   | 'multiplier'
@@ -20,6 +22,8 @@ export interface TokenIncreaserCard {
   archetypeId: ArchetypeId
   implementsRunChain: boolean
   params?: { k?: 2 | 3; creatureTokensOnly?: boolean }
+  /** plusFixedRider: lab token for the +1 rider + which batches trigger it */
+  plusFixedRider?: { riderAtom: TokenAtom; filter: PlusFixedRiderFilter }
   relevantInitialAtoms: RelevantInitialAtoms
   /** One-line teaching blurb for combobox / tooltips */
   templateLine: string
@@ -49,9 +53,9 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: '1ca79dd4-67fc-496c-96fc-489b039c4932',
     name: 'Ojer Taq, Deepest Foundation // Temple of Civilization',
     archetypeId: 'multiplier',
-    implementsRunChain: false,
+    implementsRunChain: true,
     params: { k: 3, creatureTokensOnly: true },
-    relevantInitialAtoms: ['Squirrel', 'Soldier'],
+    relevantInitialAtoms: ['Squirrel', 'Soldier', 'Frog', 'Thopter'],
     templateLine:
       'If one or more creature tokens would be created under your control, three times that many of those tokens are created instead.',
   },
@@ -77,7 +81,8 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: '774716f4-d211-497a-be91-69cd700edbf2',
     name: 'Donatello, the Brains',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Mutagen', filter: 'anyBatch' },
     relevantInitialAtoms: 'any',
     templateLine:
       'If one or more tokens would be created under your control, those tokens plus a Mutagen token are created instead.',
@@ -86,7 +91,8 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: 'f5baee8d-88e7-4468-94a9-66ca8e2caf15',
     name: 'Peregrin Took',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Food', filter: 'anyBatch' },
     relevantInitialAtoms: 'any',
     templateLine:
       'If one or more tokens would be created under your control, those tokens plus an additional Food token are created instead.',
@@ -95,7 +101,8 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: '4f352b5e-9731-4a8e-b872-db5d3bf32211',
     name: 'Quina, Qu Gourmet',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Frog', filter: 'anyBatch' },
     relevantInitialAtoms: 'any',
     templateLine:
       'If one or more tokens would be created under your control, those tokens plus a 1/1 green Frog creature token are created instead.',
@@ -104,8 +111,9 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: '4c398d11-a2fc-43e2-96e9-7f3383e1a43c',
     name: 'Stridehangar Automaton',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
-    relevantInitialAtoms: 'any',
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Thopter', filter: 'artifactBatch' },
+    relevantInitialAtoms: ['Clue', 'Food', 'Treasure', 'Map', 'Thopter'],
     templateLine:
       'If one or more artifact tokens would be created under your control, those tokens plus an additional 1/1 Thopter token are created instead.',
   },
@@ -113,7 +121,8 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: '32927bf2-63c1-4402-99dc-3a0f2f8e0f9c',
     name: 'Case of the Pilfered Proof',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Clue', filter: 'anyBatch' },
     relevantInitialAtoms: 'any',
     templateLine:
       'Solved — If one or more tokens would be created under your control, those tokens plus a Clue token are created instead.',
@@ -122,8 +131,9 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: 'b44b4e8b-7675-4c6a-a16a-92f8b6a0259f',
     name: 'Queen Allenal of Ruadach',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
-    relevantInitialAtoms: ['Squirrel', 'Soldier'],
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Soldier', filter: 'creatureBatch' },
+    relevantInitialAtoms: ['Squirrel', 'Soldier', 'Frog', 'Thopter'],
     templateLine:
       'If one or more creature tokens would be created under your control, those tokens plus a 1/1 white Soldier creature token are created instead.',
   },
@@ -131,7 +141,8 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: '61c217d9-21d5-45ef-938a-138192a901f4',
     name: 'Jolene, the Plunder Queen',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Treasure', filter: 'treasureBatch' },
     relevantInitialAtoms: ['Treasure'],
     templateLine:
       'If you would create one or more Treasure tokens, instead create those tokens plus an additional Treasure token.',
@@ -140,7 +151,8 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: 'f73fdf76-e3a6-49d0-bfb0-4b7cdbd4271e',
     name: 'Xorn',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Treasure', filter: 'treasureBatch' },
     relevantInitialAtoms: ['Treasure'],
     templateLine:
       'If you would create one or more Treasure tokens, instead create those tokens plus an additional Treasure token.',
@@ -149,8 +161,9 @@ export const TOKEN_INCREASER_CATALOG: readonly TokenIncreaserCard[] = [
     scryfallId: 'b74ad496-05bc-4c5a-9027-b14df9c387ab',
     name: 'Worldwalker Helm',
     archetypeId: 'plusFixedRider',
-    implementsRunChain: false,
-    relevantInitialAtoms: ['Treasure'],
+    implementsRunChain: true,
+    plusFixedRider: { riderAtom: 'Map', filter: 'artifactBatch' },
+    relevantInitialAtoms: ['Clue', 'Food', 'Treasure', 'Map', 'Thopter'],
     templateLine:
       'If you would create one or more artifact tokens, instead create those tokens plus an additional Map token.',
   },
@@ -243,11 +256,11 @@ function rowVisibleForE0(
 }
 
 const ARCHETYPE_LABELS: Record<ArchetypeId, string> = {
-  multiplier: 'Multiplier (×2)',
+  multiplier: 'Multiplier (×2 / ×3)',
   clueFoodTreasureSplit: 'Clue / Food / Treasure split',
   plusEqualBatchRider: 'Plus batch-sized rider',
-  plusFixedRider: 'Plus fixed rider',
-  differentEvent: 'Different event',
+  plusFixedRider: 'Plus one fixed rider',
+  differentEvent: 'Different event (not in chain)',
 }
 
 export function archetypeDisplayName(id: ArchetypeId): string {

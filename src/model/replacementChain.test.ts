@@ -5,6 +5,8 @@ import {
   singleAtomEvent,
   sumTokens,
   type ChainStep,
+  type PlusFixedRiderFilter,
+  type TokenAtom,
   type TokenEvent,
 } from './replacementChain'
 
@@ -19,6 +21,17 @@ const D = (label = 'Doubling Season'): ChainStep => ({
 const C = (label = 'Chatterfang, Squirrel General'): ChainStep => ({
   effectKey: 'plusEqualBatchRider',
   displayLabel: label,
+})
+const Ojer = (label = 'Ojer Taq'): ChainStep => ({
+  effectKey: 'multiplier',
+  displayLabel: label,
+  multiplierK: 3,
+  multiplierCreatureOnly: true,
+})
+const PF = (riderAtom: TokenAtom, filter: PlusFixedRiderFilter, label = 'plus-fixed'): ChainStep => ({
+  effectKey: 'plusFixedRider',
+  displayLabel: label,
+  plusFixedRider: { riderAtom, filter },
 })
 
 function expectBigintRecord(actual: TokenEvent, expected: Record<string, bigint>) {
@@ -60,8 +73,8 @@ describe('runChain', () => {
     const r = runChain({ Clue: 1n }, [M(), D(), C()])
     expectBigintRecord(r.final, { Clue: 2n, Food: 2n, Treasure: 2n, Squirrel: 6n })
     expect(sumTokens(r.final)).toBe(12n)
-    expect(r.steps[1]!.beforeSummary).toContain('Clue×1')
-    expect(r.steps[2]!.beforeSummary).toContain('Clue×2')
+    expect(r.steps[1]!.beforeSummary).toContain('Clue × 1')
+    expect(r.steps[2]!.beforeSummary).toContain('Clue × 2')
   })
 
   /** Path B: D→C→M on 1 Clue */
@@ -77,16 +90,56 @@ describe('runChain', () => {
     expectBigintRecord(r.final, { Clue: 2n, Food: 2n, Treasure: 2n, Squirrel: 6n })
 
     const afterTwo = runChain({ Clue: 1n }, [M(), C()])
-    expect(formatEventSummary(afterTwo.final)).toMatch(/Squirrel×3/)
-    expect(formatEventSummary(afterTwo.final)).toMatch(/Clue×1/)
+    expect(formatEventSummary(afterTwo.final)).toMatch(/Squirrel × 3/)
+    expect(formatEventSummary(afterTwo.final)).toMatch(/Clue × 1/)
 
     const pathAStep2 = runChain({ Clue: 1n }, [M(), D()])
-    expect(formatEventSummary(pathAStep2.final)).toBe('Clue×2 Food×2 Treasure×2')
+    expect(formatEventSummary(pathAStep2.final)).toBe('Clue × 2 · Food × 2 · Treasure × 2')
   })
 
   it('Manufactor: clue count c yields c of each C/F/T', () => {
     const r = runChain({ Clue: 3n }, [M()])
     expectBigintRecord(r.final, { Clue: 3n, Food: 3n, Treasure: 3n })
+  })
+
+  it('plusFixedRider anyBatch: +1 Food on non-empty batch', () => {
+    const r = runChain({ Clue: 2n }, [PF('Food', 'anyBatch', 'Peregrin')])
+    expect(r.steps[0]!.didNotApply).toBe(false)
+    expectBigintRecord(r.final, { Clue: 2n, Food: 1n })
+  })
+
+  it('plusFixedRider treasureBatch: does not apply without Treasure', () => {
+    const r = runChain({ Clue: 1n }, [PF('Treasure', 'treasureBatch', 'Jolene')])
+    expect(r.steps[0]!.didNotApply).toBe(true)
+    expectBigintRecord(r.final, { Clue: 1n })
+  })
+
+  it('plusFixedRider treasureBatch: +1 Treasure when batch has Treasure', () => {
+    const r = runChain({ Treasure: 2n }, [PF('Treasure', 'treasureBatch', 'Xorn')])
+    expectBigintRecord(r.final, { Treasure: 3n })
+  })
+
+  it('plusFixedRider creatureBatch: +1 Soldier when batch has a creature token', () => {
+    const r = runChain({ Squirrel: 2n }, [PF('Soldier', 'creatureBatch', 'Queen Allenal')])
+    expectBigintRecord(r.final, { Squirrel: 2n, Soldier: 1n })
+  })
+
+  it('plusFixedRider artifactBatch: +1 Thopter for Clue batch; not for Squirrel-only', () => {
+    const r1 = runChain({ Clue: 1n }, [PF('Thopter', 'artifactBatch', 'Stridehangar')])
+    expectBigintRecord(r1.final, { Clue: 1n, Thopter: 1n })
+    const r2 = runChain({ Squirrel: 1n }, [PF('Thopter', 'artifactBatch')])
+    expect(r2.steps[0]!.didNotApply).toBe(true)
+  })
+
+  it('Ojer ×3 creature-only: triples Squirrel, leaves Clue', () => {
+    const r = runChain({ Squirrel: 1n, Clue: 1n }, [Ojer()])
+    expectBigintRecord(r.final, { Squirrel: 3n, Clue: 1n })
+  })
+
+  it('Ojer does not apply when batch has no creature tokens', () => {
+    const r = runChain({ Clue: 2n }, [Ojer()])
+    expect(r.steps[0]!.didNotApply).toBe(true)
+    expectBigintRecord(r.final, { Clue: 2n })
   })
 })
 

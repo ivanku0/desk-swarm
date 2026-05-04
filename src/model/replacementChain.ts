@@ -3,19 +3,63 @@
  * Chatterfang-style rider uses sum of all atom counts in the event immediately before that step.
  */
 
-export const TOKEN_ATOMS = ['Clue', 'Food', 'Treasure', 'Squirrel', 'Soldier'] as const
+export const TOKEN_ATOMS = [
+  'Clue',
+  'Food',
+  'Treasure',
+  'Squirrel',
+  'Soldier',
+  'Mutagen',
+  'Frog',
+  'Map',
+  'Thopter',
+] as const
 export type TokenAtom = (typeof TOKEN_ATOMS)[number]
 
 /** Multiset: only listed atoms; omitted = 0 */
 export type TokenEvent = Partial<Record<TokenAtom, bigint>>
 
-export type RunChainEffectKey = 'multiplier' | 'clueFoodTreasureSplit' | 'plusEqualBatchRider'
+export type RunChainEffectKey =
+  | 'multiplier'
+  | 'clueFoodTreasureSplit'
+  | 'plusEqualBatchRider'
+  | 'plusFixedRider'
+
+/** Predicate for “would create” batches that qualify for a +1 fixed rider */
+export type PlusFixedRiderFilter = 'anyBatch' | 'treasureBatch' | 'creatureBatch' | 'artifactBatch'
+
+const CREATURE_ATOMS: readonly TokenAtom[] = ['Squirrel', 'Soldier', 'Frog', 'Thopter']
+const ARTIFACT_ATOMS: readonly TokenAtom[] = ['Clue', 'Food', 'Treasure', 'Map', 'Thopter']
+
+function sumCreatureTokens(e: TokenEvent): bigint {
+  let s = 0n
+  for (const k of CREATURE_ATOMS) {
+    const v = e[k]
+    if (v !== undefined && v > 0n) s += v
+  }
+  return s
+}
+
+function sumArtifactTokens(e: TokenEvent): bigint {
+  let s = 0n
+  for (const k of ARTIFACT_ATOMS) {
+    const v = e[k]
+    if (v !== undefined && v > 0n) s += v
+  }
+  return s
+}
 
 export interface ChainStep {
   /** Engine dispatch key */
   effectKey: RunChainEffectKey
   /** Label for step log (e.g. card name from catalog) */
   displayLabel: string
+  /** Multiplier: defaults ×2 on all atoms with tokens */
+  multiplierK?: 2 | 3
+  /** Multiplier: Ojer-style — only multiply creature-token atoms; other atoms unchanged */
+  multiplierCreatureOnly?: boolean
+  /** plusFixedRider: +1 riderAtom when filter matches */
+  plusFixedRider?: { riderAtom: TokenAtom; filter: PlusFixedRiderFilter }
 }
 
 export interface ChainStepLogRow {
@@ -64,16 +108,47 @@ export function formatEventSummary(e: TokenEvent): string {
   const parts: string[] = []
   for (const k of TOKEN_ATOMS) {
     const v = e[k]
-    if (v !== undefined && v > 0n) parts.push(`${k}×${v}`)
+    if (v !== undefined && v > 0n) parts.push(`${k} × ${v}`)
   }
-  return parts.length ? parts.join(' ') : '∅'
+  return parts.length ? parts.join(' · ') : 'None'
 }
 
-function applyMultiplier(e: TokenEvent): TokenEvent {
+function appliesPlusFixedRider(e: TokenEvent, filter: PlusFixedRiderFilter): boolean {
+  switch (filter) {
+    case 'anyBatch':
+      return sumTokens(e) > 0n
+    case 'treasureBatch':
+      return (e.Treasure ?? 0n) > 0n
+    case 'creatureBatch':
+      return sumCreatureTokens(e) > 0n
+    case 'artifactBatch':
+      return sumArtifactTokens(e) > 0n
+    default:
+      return false
+  }
+}
+
+function applyPlusFixedRider(e: TokenEvent, riderAtom: TokenAtom, filter: PlusFixedRiderFilter): TokenEvent {
   const out = cloneEvent(e)
-  for (const k of TOKEN_ATOMS) {
-    const v = out[k]
-    if (v !== undefined && v > 0n) out[k] = v * 2n
+  if (!appliesPlusFixedRider(e, filter)) return out
+  out[riderAtom] = (out[riderAtom] ?? 0n) + 1n
+  return out
+}
+
+function applyMultiplier(e: TokenEvent, step: ChainStep): TokenEvent {
+  const k = BigInt(step.multiplierK ?? 2)
+  const creatureOnly = step.multiplierCreatureOnly === true
+  const out = cloneEvent(e)
+  if (creatureOnly) {
+    for (const atom of CREATURE_ATOMS) {
+      const v = out[atom]
+      if (v !== undefined && v > 0n) out[atom] = v * k
+    }
+    return out
+  }
+  for (const atom of TOKEN_ATOMS) {
+    const v = out[atom]
+    if (v !== undefined && v > 0n) out[atom] = v * k
   }
   return out
 }
@@ -115,15 +190,17 @@ function applyChatterfang(e: TokenEvent): TokenEvent {
   return out
 }
 
-function appliesMultiplier(e: TokenEvent): boolean {
-  return sumTokens(e) > 0n
+function appliesMultiplier(e: TokenEvent, step: ChainStep): boolean {
+  if (sumTokens(e) <= 0n) return false
+  if (step.multiplierCreatureOnly === true) return sumCreatureTokens(e) > 0n
+  return true
 }
 
 function applyStep(current: TokenEvent, step: ChainStep): { next: TokenEvent; didNotApply: boolean } {
   switch (step.effectKey) {
     case 'multiplier': {
-      if (!appliesMultiplier(current)) return { next: cloneEvent(current), didNotApply: true }
-      return { next: applyMultiplier(current), didNotApply: false }
+      if (!appliesMultiplier(current, step)) return { next: cloneEvent(current), didNotApply: true }
+      return { next: applyMultiplier(current, step), didNotApply: false }
     }
     case 'clueFoodTreasureSplit': {
       if (!appliesManufactor(current)) return { next: cloneEvent(current), didNotApply: true }
@@ -132,6 +209,12 @@ function applyStep(current: TokenEvent, step: ChainStep): { next: TokenEvent; di
     case 'plusEqualBatchRider': {
       if (!appliesChatterfang(current)) return { next: cloneEvent(current), didNotApply: true }
       return { next: applyChatterfang(current), didNotApply: false }
+    }
+    case 'plusFixedRider': {
+      const cfg = step.plusFixedRider
+      if (!cfg) return { next: cloneEvent(current), didNotApply: true }
+      if (!appliesPlusFixedRider(current, cfg.filter)) return { next: cloneEvent(current), didNotApply: true }
+      return { next: applyPlusFixedRider(current, cfg.riderAtom, cfg.filter), didNotApply: false }
     }
     default:
       return { next: cloneEvent(current), didNotApply: true }
@@ -168,5 +251,6 @@ export function archetypeIdToEffectKey(
   if (archetypeId === 'multiplier') return 'multiplier'
   if (archetypeId === 'clueFoodTreasureSplit') return 'clueFoodTreasureSplit'
   if (archetypeId === 'plusEqualBatchRider') return 'plusEqualBatchRider'
+  if (archetypeId === 'plusFixedRider') return 'plusFixedRider'
   return null
 }

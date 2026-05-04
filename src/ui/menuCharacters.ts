@@ -12,6 +12,8 @@ export interface MenuSlide {
   oracleText: string
   /** Italic flavor quote + attribution at bottom of card (null = none) */
   flavorText: string | null
+  /** Optional flavor quote rotation for menu easter egg behavior. */
+  flavorQuotes?: readonly string[]
   /** When set, CTA starts this preset after confirm */
   presetId: PresetId | null
   /** Opens Replacement Lab (no preset track) */
@@ -67,12 +69,18 @@ export const MENU_SLIDES: readonly MenuSlide[] = [
     typeLine: 'Lab — Simulator',
     ptLine: '∞ / ∞',
     oracleText:
-      'Compose up to five token increasers, order them, and watch how the same “would create” batch rewrites. Compare totals and per-step deltas — teaching mode, not a judge.',
-    flavorText: null,
+      'How does Doubling Season interact with Chatterfang? Use this tool to explore and optimize how different replacement effects create tokens.',
+    flavorText:
+      '“There will come a time when the only prey left will be each other.”\n—Ulrich of Krallenhorde Pack',
+    flavorQuotes: [
+      '“There will come a time when the only prey left will be each other.”\n—Ulrich of Krallenhorde Pack',
+      'Double the slobber, double the love.',
+      '“The gods here may walk among the people, but they are not with them.”\n—Gideon Jura',
+    ],
     presetId: null,
     opensLab: true,
     ctaLabel: 'open lab',
     tileVariant: 'lab',
-    swatchSpriteSrc: '/art/scute/token-ref.png',
+    swatchSpriteSrc: '/art/replacement-lab/chatterfang-avatar.png',
   },
 ] as const
