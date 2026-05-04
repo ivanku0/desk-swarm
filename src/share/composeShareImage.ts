@@ -43,7 +43,7 @@ export async function composeShareImage(
   ctx.fillText(formatCount(count), pad, fieldH + pad + 150)
   ctx.fillStyle = ink
   ctx.font = 'bold 26px system-ui, sans-serif'
-  ctx.fillText('swarm desk', pad, H - pad - 148)
+  ctx.fillText('desk swarm', pad, H - pad - 148)
   ctx.font = '22px system-ui, sans-serif'
   ctx.fillText('math is for blockers. track tokens quickly.', pad, H - pad - 118)
   ctx.font = '20px system-ui, sans-serif'

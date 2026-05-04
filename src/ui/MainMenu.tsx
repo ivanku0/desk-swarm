@@ -51,8 +51,8 @@ export function MainMenu({
       <div className="menu-hero">
         <header className="menu-header">
           <h1 className="menu-logotype">
-            <span className="menu-logotype__line">swarm</span>
             <span className="menu-logotype__line">desk</span>
+            <span className="menu-logotype__line">swarm</span>
           </h1>
           <p className="menu-tagline">math is for blockers. track tokens quickly.</p>
         </header>
