@@ -23,6 +23,9 @@ export function MainMenu({
   const slide = MENU_SLIDES[index]!
   const cardBundle = slide.presetId ? getCardBundle(slide.presetId) : null
   const flavorCycle = useMemo(() => {
+    if (slide.flavorQuotes && slide.flavorQuotes.length > 1) {
+      return [...slide.flavorQuotes]
+    }
     if (cardBundle?.flavorQuotes && cardBundle.flavorQuotes.length > 1) {
       return [...cardBundle.flavorQuotes]
     }
