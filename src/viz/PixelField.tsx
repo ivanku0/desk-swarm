@@ -301,6 +301,15 @@ function drawKrenkoCenterMob(
   }
 }
 
+/**
+ * 0…1 as orbiting goblin count grows. Ramps with log₂ so doubling 8→16→32 reads as denser rings
+ * (tighter than the old log₁₀ curve in the Commander-relevant band).
+ */
+function krenkoOrbitCrowdK(nMinions: number): number {
+  if (nMinions <= 1) return 0
+  return Math.min(1, Math.log2(nMinions + 0.25) / 4.4)
+}
+
 function drawKrenkoOrbitSwarm(
   ctx: CanvasRenderingContext2D,
   totalCount: bigint,
@@ -335,29 +344,37 @@ function drawKrenkoOrbitSwarm(
   }
 
   const variants = swarmGlyphVariants('krenko')
-  const crowdK = Math.min(1, Math.log10(nMinions + 1) / 5.2)
-  const ringGap = bossHalf * (1.02 - crowdK * 0.44)
-  const baseRadius = bossHalf * (1.74 - crowdK * 0.58)
+  const crowdK = krenkoOrbitCrowdK(nMinions)
+  /* Tighter ring stack + slightly smaller first ring as horde grows (esp. 8+). */
+  const ringGap = bossHalf * (0.56 - crowdK * 0.36)
+  const baseRadius = bossHalf * (1.34 - crowdK * 0.46)
+  /* More rings when crowded: fewer slots per ring, step shrinks too. */
+  const firstRingSlots = Math.max(5, Math.min(8, Math.round(8 - crowdK * 3.15)))
+  const ringSlotStep = Math.max(5, Math.min(8, Math.round(8 - crowdK * 2.85)))
+  const spinMul = 1 + crowdK * 0.95
   const renderCount =
     nMinions <= 160 ? nMinions : Math.min(540, 160 + Math.floor(Math.sqrt(nMinions - 160) * 18))
   let placed = 0
   let ring = 0
 
   while (placed < renderCount) {
-    const slots = 8 + ring * 8
+    const slots = firstRingSlots + ring * ringSlotStep
     const inRing = Math.min(slots, renderCount - placed)
     const radius = baseRadius + ring * ringGap
-    const ringSpin = reducedMotion ? 0 : (ring % 2 === 0 ? 0.4 : -0.32) * t
+    const ringSpin = reducedMotion ? 0 : (ring % 2 === 0 ? 0.4 : -0.32) * t * spinMul
     for (let j = 0; j < inRing; j++) {
       const i = placed + j
       const frac = j / inRing
       const baseAng = frac * Math.PI * 2 + ring * 0.32
       const ang = baseAng + ringSpin
-      const wobbleMul = 0.12 - crowdK * 0.07
+      const wobbleMul = Math.max(0.018, 0.11 - crowdK * 0.085)
       const wobble = reducedMotion ? 0 : Math.sin(t * 2.2 + i * 0.67) * bossHalf * wobbleMul
       const ox = Math.cos(ang) * (radius + wobble)
       const oy = Math.sin(ang) * (radius + wobble)
-      const sizeScale = Math.max(0.12, 0.5 - ring * 0.065 - crowdK * 0.09)
+      const sizeScale = Math.max(
+        0.065,
+        0.46 - ring * (0.072 + crowdK * 0.038) - crowdK * 0.12,
+      )
       const minionHalf = bossHalf * sizeScale
       const minionSprite = pickKrenkoMinionSprite(i, minionA, minionB)
       const flipX = krenkoMinionFlipX(i)
@@ -435,6 +452,55 @@ function clampPan(px: number, py: number, w: number, h: number, scale: number) {
     x: Math.min(maxPx, Math.max(minPx, px)),
     y: Math.min(maxPy, Math.max(minPy, py)),
   }
+}
+
+/**
+ * Mean position of swarm token centers (static layout: swarmed cell + cluster separation).
+ * Used to bias pan when zoomed in. Returns null for solo token, Krenko orbit layouts, or empty.
+ */
+function swarmCentroidBasePx(
+  presetId: PresetId,
+  count: bigint,
+  w: number,
+  h: number,
+  leaderPresent: boolean,
+  krenkoOrbitHordeWithoutBoss: boolean,
+  bossSprite: HTMLImageElement | null,
+): { cx: number; cy: number } | null {
+  const bossReady = Boolean(bossSprite && bossSprite.naturalWidth > 0)
+  const order = getSwarmCellOrder(presetId)
+  const n = swarmGlyphCountForCanvas(count)
+  const useKrenkoOrbitCanvas =
+    presetId === 'krenko' &&
+    n > 0 &&
+    ((leaderPresent && bossReady) || (krenkoOrbitHordeWithoutBoss && !leaderPresent))
+  if (useKrenkoOrbitCanvas || n <= 1) return null
+
+  const flags = new Uint8Array(SWARM_COLS * SWARM_ROWS)
+  fillSwarmActiveFlags(flags, order, n)
+  const cw = w / SWARM_COLS
+  const ch = h / SWARM_ROWS
+  const clusterSep = n > 1 ? clusterSeparationPx(flags, cw, ch) : new Map<number, { sx: number; sy: number }>()
+  const krenkoBossCellIdx =
+    presetId === 'krenko' && leaderPresent && bossReady && n > 0 ? order[0]! : -1
+
+  let sx = 0
+  let sy = 0
+  let c = 0
+  for (let gy = 0; gy < SWARM_ROWS; gy++) {
+    for (let gx = 0; gx < SWARM_COLS; gx++) {
+      const idx = gy * SWARM_COLS + gx
+      if (!flags[idx]) continue
+      if (idx === krenkoBossCellIdx) continue
+      const { ax, ay } = swarmedCellCenterPx(gx, gy, cw, ch)
+      const sep = clusterSep.get(idx) ?? { sx: 0, sy: 0 }
+      sx += ax + sep.sx
+      sy += ay + sep.sy
+      c += 1
+    }
+  }
+  if (c === 0) return null
+  return { cx: sx / c, cy: sy / c }
 }
 
 type ScuteAtlasPaint =
@@ -989,23 +1055,61 @@ export const PixelField = forwardRef<
     }
     const el = canvasRef.current
     if (!el) return
-    if (count === 1n) {
-      panRef.current = centerLensPan(el)
-    } else {
+
+    const applyPanFromLayout = () => {
+      if (fieldMode !== 'normal') {
+        panRef.current = { x: 0, y: 0 }
+        return
+      }
+      const cw = el.clientWidth
+      const ch = el.clientHeight
+      if (cw < 8 || ch < 8) return
+
+      if (count === 1n) {
+        panRef.current = centerLensPan(el)
+        return
+      }
+
+      if (count > 1n && zoomScale > 1 + 1e-6) {
+        const centroid = swarmCentroidBasePx(
+          presetId,
+          count,
+          cw,
+          ch,
+          leaderPresent,
+          krenkoOrbitHordeWithoutBoss,
+          presetId === 'krenko' ? krenkoBossSprite : null,
+        )
+        if (centroid) {
+          panRef.current = clampPan(
+            centroid.cx - cw / 2,
+            centroid.cy - ch / 2,
+            cw,
+            ch,
+            zoomScale,
+          )
+        } else {
+          panRef.current = { x: 0, y: 0 }
+        }
+        return
+      }
+
       panRef.current = { x: 0, y: 0 }
     }
-  }, [zoomScale, fieldMode, count])
 
-  useEffect(() => {
-    if (fieldMode !== 'normal' || count !== 1n) return
-    const el = canvasRef.current
-    if (!el) return
-    const ro = new ResizeObserver(() => {
-      panRef.current = centerLensPan(el)
-    })
+    applyPanFromLayout()
+    const ro = new ResizeObserver(() => applyPanFromLayout())
     ro.observe(el)
     return () => ro.disconnect()
-  }, [fieldMode, count])
+  }, [
+    zoomScale,
+    fieldMode,
+    count,
+    presetId,
+    leaderPresent,
+    krenkoOrbitHordeWithoutBoss,
+    krenkoBossSprite,
+  ])
 
   useImperativeHandle(ref, () => ({
     toDataURL: () => canvasRef.current?.toDataURL('image/png'),
