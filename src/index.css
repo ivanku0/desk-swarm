@@ -2268,20 +2268,24 @@ button.hero-panel--meter:focus-visible {
 
 .replacement-lab__slotActions {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
 }
 
 .replacement-lab__iconBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: none;
   border-radius: 6px;
   background: var(--surface-app);
   color: var(--ink);
   cursor: pointer;
+  text-decoration: none;
 }
 
 .replacement-lab__iconBtn:disabled {

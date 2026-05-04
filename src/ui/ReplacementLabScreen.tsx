@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, ExternalLink } from 'lucide-react'
 import {
   TOKEN_INCREASER_CATALOG,
   archetypeDisplayName,
@@ -44,6 +44,10 @@ const RECIPE_ATOMS: readonly TokenAtom[] = TOKEN_ATOMS
 
 /** Chatterfang pixel mascot — lives in `public/art/replacement-lab/`. */
 const REPLACEMENT_LAB_CHATTERFANG_URL = `${import.meta.env.BASE_URL}art/replacement-lab/chatterfang-avatar.png`
+
+function scryfallCardUrl(id: string): string {
+  return `https://scryfall.com/card/${id}`
+}
 
 function parseRecipeCount(raw: string): bigint {
   const n = Number.parseInt(raw, 10)
@@ -181,17 +185,6 @@ export function ReplacementLabScreen({
     [bumpMeter, clearOptimizeUndo],
   )
 
-  const moveSlot = useCallback(
-    (i: number, dir: -1 | 1) => {
-      const j = i + dir
-      if (j < 0 || j >= SLOT_COUNT) return
-      setSlots((s) => arrayMove([...s], i, j))
-      clearOptimizeUndo()
-      bumpMeter()
-    },
-    [bumpMeter, clearOptimizeUndo],
-  )
-
   const doOptimize = useCallback(() => {
     const snapshot = [...slots]
     const next = optimizeReplacementSlots(snapshot, recipe, catalogById)
@@ -308,7 +301,7 @@ export function ReplacementLabScreen({
           2 — Replacement chain (max {SLOT_COUNT})
         </h2>
         <p className="replacement-lab__hint">
-          Drag rows or use arrows. Only cards that can apply to your starting batch are listed.
+          Drag rows to reorder. Open the selected card on Scryfall from the link icon.
         </p>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -336,24 +329,28 @@ export function ReplacementLabScreen({
                       ))}
                     </select>
                     <div className="replacement-lab__slotActions">
-                      <button
-                        type="button"
-                        className="replacement-lab__iconBtn"
-                        onClick={() => moveSlot(i, -1)}
-                        disabled={i === 0}
-                        aria-label={`Move slot ${i + 1} up`}
-                      >
-                        <ChevronUp size={18} />
-                      </button>
-                      <button
-                        type="button"
-                        className="replacement-lab__iconBtn"
-                        onClick={() => moveSlot(i, 1)}
-                        disabled={i === SLOT_COUNT - 1}
-                        aria-label={`Move slot ${i + 1} down`}
-                      >
-                        <ChevronDown size={18} />
-                      </button>
+                      {slotId ? (
+                        <a
+                          href={scryfallCardUrl(slotId)}
+                          className="replacement-lab__iconBtn"
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Open selected card on Scryfall for slot ${i + 1}`}
+                          title="Open on Scryfall"
+                        >
+                          <ExternalLink size={16} />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="replacement-lab__iconBtn"
+                          disabled
+                          aria-label={`No card selected in slot ${i + 1}`}
+                          title="Select a card first"
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                      )}
                     </div>
                   </SortableSlotRow>
                 </li>
