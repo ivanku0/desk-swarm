@@ -1,7 +1,7 @@
 import { getCardBundle } from '../data/cardData'
 import type { PresetId } from '../presets/types'
 
-export type MenuSlideId = 'scute' | 'horde' | 'krenko' | 'coming-soon'
+export type MenuSlideId = 'scute' | 'horde' | 'krenko' | 'replacement-lab'
 
 export interface MenuSlide {
   id: MenuSlideId
@@ -12,12 +12,16 @@ export interface MenuSlide {
   oracleText: string
   /** Italic flavor quote + attribution at bottom of card (null = none) */
   flavorText: string | null
+  /** Optional flavor quote rotation for menu easter egg behavior. */
+  flavorQuotes?: readonly string[]
   /** When set, CTA starts this preset after confirm */
   presetId: PresetId | null
+  /** Opens Replacement Lab (no preset track) */
+  opensLab?: boolean
   /** Shown on the CTA (disabled when presetId is null) */
   ctaLabel: string
   /** BEM suffix for tile theming */
-  tileVariant: 'scute' | 'horde' | 'krenko' | 'soon'
+  tileVariant: 'scute' | 'horde' | 'krenko' | 'lab' | 'soon'
   /** Optional top-band creature sprite (pixel art). */
   swatchSpriteSrc?: string
 }
@@ -60,15 +64,23 @@ export const MENU_SLIDES: readonly MenuSlide[] = [
     swatchSpriteSrc: '/art/krenko/leader-ref.png',
   },
   {
-    id: 'coming-soon',
-    cardName: '???',
-    typeLine: 'Creature — ???',
-    ptLine: '? / ?',
+    id: 'replacement-lab',
+    cardName: 'Replacement Lab',
+    typeLine: 'Lab — Simulator',
+    ptLine: '∞ / ∞',
     oracleText:
-      'Something is still tunneling under the packaging. This slot is reserved for a future swarm commander toy—same desk, new bug.',
-    flavorText: null,
+      'How does Doubling Season interact with Chatterfang? Use this tool to explore and optimize how different replacement effects create tokens.',
+    flavorText:
+      '“There will come a time when the only prey left will be each other.”\n—Ulrich of Krallenhorde Pack',
+    flavorQuotes: [
+      '“There will come a time when the only prey left will be each other.”\n—Ulrich of Krallenhorde Pack',
+      'Double the slobber, double the love.',
+      '“The gods here may walk among the people, but they are not with them.”\n—Gideon Jura',
+    ],
     presetId: null,
-    ctaLabel: 'coming soon',
-    tileVariant: 'soon',
+    opensLab: true,
+    ctaLabel: 'open lab',
+    tileVariant: 'lab',
+    swatchSpriteSrc: '/art/replacement-lab/chatterfang-avatar.png',
   },
 ] as const

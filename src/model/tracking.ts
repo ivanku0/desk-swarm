@@ -1,7 +1,6 @@
 import type { PresetId } from '../presets/types'
 
 export const DEFAULT_COUNT = 1n
-export const SCUTE_LINEAR_MAX = 6n
 
 /** Double the count, or from empty board (0) create the first creature at 1. */
 export function growCount(c: bigint): bigint {
@@ -11,12 +10,12 @@ export function growCount(c: bigint): bigint {
 
 /**
  * Preset-aware grow rule.
- * Scute grows linearly through 6, then switches to doubling.
+ * Scute matches Horde doubling: the app assumes you already control six or more
+ * lands, so each landfall creates a copy (no separate Insect / land tracking).
  */
 export function growCountForPreset(c: bigint, presetId: PresetId): bigint {
   if (presetId === 'krenko') return c
   if (c === 0n) return DEFAULT_COUNT
-  if (presetId === 'scute' && c <= SCUTE_LINEAR_MAX) return c + 1n
   return growCount(c)
 }
 
@@ -32,7 +31,7 @@ export function krenkItCount(total: bigint, krenkoPresent: boolean): bigint {
 }
 
 /**
- * Toggle Krenko presence on the board (toy rules).
+ * Toggle Krenko presence on the board (simplified Krenko flow).
  * Add: empty board → 1 goblin with boss; else +1 goblin and boss present.
  * Remove: −1 goblin (min 0) and boss leaves.
  */

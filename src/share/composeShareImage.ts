@@ -48,7 +48,7 @@ export async function composeShareImage(
   ctx.fillText('math is for blockers. track tokens quickly.', pad, H - pad - 118)
   ctx.font = '20px system-ui, sans-serif'
   ctx.fillStyle = '#4a5c46'
-  ctx.fillText('casual tracker — not affiliated with wizards of the coast.', pad, H - pad - 72)
+  ctx.fillText('Independent fan project — not affiliated with Wizards of the Coast.', pad, H - pad - 72)
   return new Promise((resolve) =>
     canvas.toBlob((b) => resolve(b), 'image/png', 0.92),
   )

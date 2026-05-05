@@ -10,9 +10,11 @@ const CAROUSEL_SWIPE_PX = 56
 
 export function MainMenu({
   onPick,
+  onOpenLab,
   activity,
 }: {
   onPick: (id: PresetId) => void
+  onOpenLab?: () => void
   activity: ActivityEntry[]
 }) {
   const [index, setIndex] = useState(0)
@@ -21,6 +23,9 @@ export function MainMenu({
   const slide = MENU_SLIDES[index]!
   const cardBundle = slide.presetId ? getCardBundle(slide.presetId) : null
   const flavorCycle = useMemo(() => {
+    if (slide.flavorQuotes && slide.flavorQuotes.length > 1) {
+      return [...slide.flavorQuotes]
+    }
     if (cardBundle?.flavorQuotes && cardBundle.flavorQuotes.length > 1) {
       return [...cardBundle.flavorQuotes]
     }
@@ -73,8 +78,12 @@ export function MainMenu({
 
   const confirmStart = useCallback(() => {
     const s = MENU_SLIDES[index]
+    if (s?.opensLab) {
+      onOpenLab?.()
+      return
+    }
     if (s?.presetId) onPick(s.presetId)
-  }, [index, onPick])
+  }, [index, onPick, onOpenLab])
 
   return (
     <div className="screen menu-screen">
@@ -173,9 +182,9 @@ export function MainMenu({
 
         <button
           type="button"
-          className={`char-select__cta${slide.presetId ? '' : ' char-select__cta--soon'}`}
-          disabled={!slide.presetId}
-          aria-disabled={!slide.presetId}
+          className={`char-select__cta${slide.presetId || slide.opensLab ? '' : ' char-select__cta--soon'}`}
+          disabled={!slide.presetId && !slide.opensLab}
+          aria-disabled={!slide.presetId && !slide.opensLab}
           onClick={confirmStart}
         >
           {slide.ctaLabel}

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Scryfall fetch script output (regenerate with npm run catalog:fetch)
+scripts/token-increaser-scryfall-snapshot.json

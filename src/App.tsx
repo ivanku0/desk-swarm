@@ -1,11 +1,12 @@
 import { useCallback, useState, useSyncExternalStore } from 'react'
 import type { PresetId } from './presets/types'
 import { MainMenu } from './ui/MainMenu'
+import { ReplacementLabScreen } from './ui/ReplacementLabScreen'
 import { TrackScreen } from './ui/TrackScreen'
 import { InfoSheet } from './ui/InfoSheet'
 import type { ActivityEntry } from './ui/ActivityLog'
 
-type Phase = 'menu' | 'track'
+type Phase = 'menu' | 'track' | 'lab'
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -54,6 +55,17 @@ export default function App() {
     })
   }
 
+  const openLab = () => {
+    setPhase('lab')
+    setPreset(null)
+    appendActivity({ presetId: null, text: 'opened replacement lab' })
+  }
+
+  const leaveLab = () => {
+    appendActivity({ presetId: null, text: 'left replacement lab (menu)' })
+    setPhase('menu')
+  }
+
   const leaveTrack = () => {
     if (preset) appendActivity({ presetId: preset, text: 'left run (menu)' })
     setPhase('menu')
@@ -64,7 +76,10 @@ export default function App() {
   return (
     <div className="app-root">
       {phase === 'menu' ? (
-        <MainMenu onPick={pickPreset} activity={activity} />
+        <MainMenu onPick={pickPreset} onOpenLab={openLab} activity={activity} />
+      ) : null}
+      {phase === 'lab' ? (
+        <ReplacementLabScreen onLeave={leaveLab} reducedMotion={reducedMotion} />
       ) : null}
       {phase === 'track' && preset ? (
         <TrackScreen

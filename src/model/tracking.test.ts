@@ -20,10 +20,10 @@ describe('tracking', () => {
     expect(growCount(0n)).toBe(1n)
   })
 
-  it('scute grows linearly through 6, then doubles', () => {
+  it('scute doubles like horde (six-plus lands assumed for copy tokens)', () => {
     expect(growCountForPreset(0n, 'scute')).toBe(1n)
-    expect(growCountForPreset(5n, 'scute')).toBe(6n)
-    expect(growCountForPreset(6n, 'scute')).toBe(7n)
+    expect(growCountForPreset(1n, 'scute')).toBe(2n)
+    expect(growCountForPreset(6n, 'scute')).toBe(12n)
     expect(growCountForPreset(7n, 'scute')).toBe(14n)
   })
 

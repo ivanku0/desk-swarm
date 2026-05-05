@@ -2,7 +2,7 @@
 
 **Math is for blockers.** **Desk swarm** is a small, installable web app for tracking **niche Commander-scale creature counts** when the board is really a pile of identical tokens (think **Scute Swarm** or **Homunculus Horde**) and you want a fast counter at the table without spreadsheets or dice gymnastics.
 
-This is a **casual toy**, not a rules engine: it encodes a few house-friendly behaviors so the number line matches how many bugs or homunculi you care about in the moment.
+It encodes a few focused behaviors so the meter matches how many bugs or homunculi you care about in the moment.
 
 ---
 

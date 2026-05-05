@@ -5,7 +5,6 @@ import {
   growCountForPreset,
   applyMicro,
   DEFAULT_COUNT,
-  SCUTE_LINEAR_MAX,
   krenkItCount,
   toggleKrenkoPresence,
   dismissKrenkoBossKeepHorde,
@@ -73,7 +72,8 @@ export function TrackScreen({
   type HypeFlash = { text: string; id: number }
   const [deltaFlash, setDeltaFlash] = useState<DeltaFlash | null>(null)
   const [hypeFlash, setHypeFlash] = useState<HypeFlash | null>(null)
-  const [growBurst, setGrowBurst] = useState(false)
+  /** Scute: show “6 lands” line under grow CTA until first successful grow this visit. */
+  const [scuteGrowHintConsumed, setScuteGrowHintConsumed] = useState(false)
 
   const clearDeltaFlash = useCallback((id: number) => {
     setDeltaFlash((cur) => (cur?.id === id ? null : cur))
@@ -141,8 +141,7 @@ export function TrackScreen({
     }
     const next = growCountForPreset(count, presetId)
     if (next === before) return
-    const scuteExpGate = presetId === 'scute' && before === SCUTE_LINEAR_MAX
-    if (scuteExpGate && !reducedMotion) setGrowBurst(true)
+    if (presetId === 'scute') setScuteGrowHintConsumed(true)
     setHeroDrain(null)
     pushUndo()
     setCount(next)
@@ -366,9 +365,7 @@ export function TrackScreen({
 
   const heroNumber = heroDrain ?? count
 
-  const scuteExpReady = presetId === 'scute' && count === SCUTE_LINEAR_MAX
   const krenkReady = presetId === 'krenko' && krenkoPresent && count > 0n
-  const growCharged = scuteExpReady || krenkReady
   const krenkGrowDisabled = presetId === 'krenko' && krenkoPresent && count <= 0n
 
   return (
@@ -511,23 +508,23 @@ export function TrackScreen({
               {deltaFlash.text}
             </span>
           ) : null}
-          <span
-            className={`grow-btn-slot${scuteExpReady ? ' grow-btn-slot--scute-warn' : ''}`}
-          >
+          <span className="grow-btn-slot">
             <button
               type="button"
-              className={`grow-btn${growCharged ? ' grow-btn--charged' : ''}${growBurst ? ' grow-btn--burst' : ''}`}
+              className={`grow-btn${krenkReady ? ' grow-btn--charged' : ''}`}
               disabled={krenkGrowDisabled}
               aria-label={presetId === 'krenko' && !krenkoPresent ? 'Cast Krenko onto the board' : undefined}
               onClick={doGrow}
-              onAnimationEnd={(e) => {
-                if (e.animationName === 'grow-btn-burst') setGrowBurst(false)
-              }}
             >
               <span className="grow-btn__title">
                 {presetId === 'krenko' ? (krenkoPresent ? preset.growLabel : 'CAST KRENKO') : preset.growLabel}
               </span>
-              {scuteExpReady || krenkReady ? (
+              {presetId === 'scute' && !scuteGrowHintConsumed ? (
+                <span className="grow-btn__subtitle grow-btn__subtitle--scute-lands-hint">
+                  u got 6 lands, right?
+                </span>
+              ) : null}
+              {krenkReady ? (
                 <span className="grow-btn__subtitle" aria-hidden>
                   next: ×2
                 </span>
