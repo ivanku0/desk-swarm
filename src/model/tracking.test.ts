@@ -61,8 +61,8 @@ describe('tracking', () => {
     expect(toggleKrenkoPresence(5n, true)).toEqual({ total: 4n, present: false })
   })
 
-  it('dismiss boss keeps horde count when goblins remain', () => {
-    expect(dismissKrenkoBossKeepHorde(12n, true)).toEqual({ total: 12n, present: false })
+  it('dismiss boss subtracts one goblin when horde remains', () => {
+    expect(dismissKrenkoBossKeepHorde(12n, true)).toEqual({ total: 11n, present: false })
     expect(dismissKrenkoBossKeepHorde(12n, false)).toEqual({ total: 12n, present: false })
   })
 
