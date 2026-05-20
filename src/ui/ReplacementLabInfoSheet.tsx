@@ -45,15 +45,8 @@ export function ReplacementLabInfoSheet({
               </li>
             </ul>
 
-            <h4 className="info-sheet__rulesHeading">Reference links</h4>
+            <h4 className="info-sheet__rulesHeading replacement-lab-info__refsHeading">Reference links</h4>
             <p className="info-sheet__rulesLead">
-              There is no single Oracle card text for “replacement effects” as a whole; this is a rules concept.
-            </p>
-            <p className="info-sheet__rulesLead">
-              <a href="https://magic.wizards.com/en/rules" target="_blank" rel="noreferrer">
-                Magic comprehensive rules
-              </a>
-              {' · '}
               <a href="https://scryfall.com/search?q=otag%3Atoken-increaser" target="_blank" rel="noreferrer">
                 Scryfall token-increaser search
               </a>

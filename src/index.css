@@ -1790,6 +1790,10 @@ button.hero-panel--meter:focus-visible {
   color: var(--ink-muted);
 }
 
+.replacement-lab-info__refsHeading {
+  margin-top: 2.25em;
+}
+
 .info-sheet__tipsHeading {
   margin: 0 0 10px;
   font-size: 0.78rem;
