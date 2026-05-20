@@ -7,7 +7,7 @@ import {
   DEFAULT_COUNT,
   krenkItCount,
   toggleKrenkoPresence,
-  dismissKrenkoBossKeepHorde,
+  countAfterBossDismissal,
   parseManualCountInput,
 } from '../model/tracking'
 import { formatCount } from '../model/formatCount'
@@ -64,6 +64,7 @@ export function TrackScreen({
   const [wipeChoiceOpen, setWipeChoiceOpen] = useState(false)
   const fieldRef = useRef<PixelFieldHandle>(null)
   const wipeFromRef = useRef(0n)
+  const bossDismissFromRef = useRef(0n)
   const krenkoDyingKindRef = useRef<KrenkoDyingKind | null>(null)
   const [krenkoDyingKind, setKrenkoDyingKind] = useState<KrenkoDyingKind | null>(null)
   const [drainKey, setDrainKey] = useState(0)
@@ -222,6 +223,7 @@ export function TrackScreen({
   const startKrenkoBossDismissalDeath = useCallback(() => {
     if (presetId !== 'krenko') return
     if (!krenkoPresentRef.current || countRef.current <= 0n) return
+    bossDismissFromRef.current = countRef.current
     krenkoDyingKindRef.current = 'bossDismissal'
     setKrenkoDyingKind('bossDismissal')
     pushUndo()
@@ -273,49 +275,46 @@ export function TrackScreen({
     (t) => setWipeHold(t),
   )
 
-  const onDyingComplete = useCallback(() => {
-    const kind = krenkoDyingKindRef.current
+  const onDyingComplete = useCallback(
+    (completedKind: KrenkoDyingKind | null) => {
+      const kind = completedKind ?? krenkoDyingKindRef.current
 
-    if (presetId === 'krenko' && kind === 'bossDismissal') {
-      const before = countRef.current
-      const { total, present } = dismissKrenkoBossKeepHorde(before, krenkoPresentRef.current)
-      if (before === total && present === krenkoPresentRef.current) {
+      if (presetId === 'krenko' && kind === 'bossDismissal') {
+        const before = bossDismissFromRef.current || countRef.current
+        const total = countAfterBossDismissal(before)
+        setHeroDrain(null)
+        setCount(total)
+        setKrenkoPresent(false)
+        setWipeSnapshot(null)
         krenkoDyingKindRef.current = null
         setKrenkoDyingKind(null)
         setFieldMode('normal')
+        setPulseKey((k) => k + 1)
+        showDelta(before, total, 'bossOut', 'boss out')
+        appendActivity({
+          presetId,
+          text: `Krenko leaves — ${formatCount(total)} goblins remain`,
+        })
         return
       }
-      setHeroDrain(null)
-      setCount(total)
-      setKrenkoPresent(present)
-      setWipeSnapshot(null)
+
       krenkoDyingKindRef.current = null
       setKrenkoDyingKind(null)
+      const from = wipeFromRef.current
+      setCount(0n)
+      if (presetId === 'krenko') setKrenkoPresent(false)
+      setWipeSnapshot(null)
       setFieldMode('normal')
+      setDrainKey((k) => k + 1)
       setPulseKey((k) => k + 1)
-      showDelta(before, total, 'bossOut', 'boss out')
+      showDelta(from, 0n, 'wipe')
       appendActivity({
         presetId,
-        text: `Krenko leaves — ${formatCount(total)} goblins remain`,
+        text: `board wiped (was ${formatCount(from)})`,
       })
-      return
-    }
-
-    krenkoDyingKindRef.current = null
-    setKrenkoDyingKind(null)
-    const from = wipeFromRef.current
-    setCount(0n)
-    if (presetId === 'krenko') setKrenkoPresent(false)
-    setWipeSnapshot(null)
-    setFieldMode('normal')
-    setDrainKey((k) => k + 1)
-    setPulseKey((k) => k + 1)
-    showDelta(from, 0n, 'wipe')
-    appendActivity({
-      presetId,
-      text: `board wiped (was ${formatCount(from)})`,
-    })
-  }, [appendActivity, presetId, showDelta])
+    },
+    [appendActivity, presetId, showDelta],
+  )
 
   const onEmptyJokeComplete = useCallback(() => {
     setFieldMode('normal')

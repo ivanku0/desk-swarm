@@ -921,7 +921,7 @@ export const PixelField = forwardRef<
     krenkoOrbitHordeWithoutBoss?: boolean
     /** When `fieldMode === 'dying'`, why (drives particle bulk + timing for Krenko boss vignettes). */
     krenkoDyingKind?: KrenkoDyingKind | null
-    onDyingComplete?: () => void
+    onDyingComplete?: (kind: KrenkoDyingKind | null) => void
     onEmptyJokeComplete?: () => void
   }
 >(function PixelField(
@@ -951,11 +951,17 @@ export const PixelField = forwardRef<
   const krenkoBossDeathSpriteRef = useRef<HTMLImageElement | null>(null)
   const krenkoMinionARef = useRef<HTMLImageElement | null>(null)
   const krenkoMinionBRef = useRef<HTMLImageElement | null>(null)
+  const swarmTokensRef = useRef<Record<PresetId, SwarmTokenFrames> | null>(null)
+  const onDyingCompleteRef = useRef(onDyingComplete)
+  onDyingCompleteRef.current = onDyingComplete
 
   useEffect(() => {
     let cancelled = false
     loadAllSwarmTokenFrames().then((r) => {
-      if (!cancelled) setSwarmTokens(r)
+      if (!cancelled) {
+        swarmTokensRef.current = r
+        setSwarmTokens(r)
+      }
     })
     return () => {
       cancelled = true
@@ -1264,19 +1270,20 @@ export const PixelField = forwardRef<
     if (fieldMode !== 'dying') return
     const canvas = canvasRef.current
     if (!canvas) return
+    const dyingKind = krenkoDyingKind
     if (reducedMotion) {
       particlesRef.current = []
-      onDyingComplete?.()
+      onDyingCompleteRef.current?.(dyingKind)
       return
     }
     const w = canvas.clientWidth
     const h = canvas.clientHeight
-    const particleBulk = krenkoDyingSwarmCountForParticles(presetId, krenkoDyingKind, count, leaderPresent)
+    const particleBulk = krenkoDyingSwarmCountForParticles(presetId, dyingKind, count, leaderPresent)
     particlesRef.current = buildParticles(particleBulk, presetId, w, h)
     const start = performance.now()
     const dur = KRENKO_BOSS_DEATH_DURATION_MS
     const variants = swarmGlyphVariants(presetId)
-    const tokenFrames = swarmTokens?.[presetId] ?? { a: null, b: null }
+    const tokenFrames = swarmTokensRef.current?.[presetId] ?? swarmTokens?.[presetId] ?? { a: null, b: null }
     const useTok = swarmSpriteReady(tokenFrames)
 
     let deathRaf = 0
@@ -1301,7 +1308,7 @@ export const PixelField = forwardRef<
       ctx.fillRect(0, 0, ww, hh)
       if (
         presetId === 'krenko' &&
-        krenkoDyingKind === 'bossDismissal' &&
+        dyingKind === 'bossDismissal' &&
         leaderPresent &&
         count > 1n
       ) {
@@ -1349,22 +1356,12 @@ export const PixelField = forwardRef<
         deathRaf = requestAnimationFrame(tick)
       } else {
         particlesRef.current = []
-        onDyingComplete?.()
+        onDyingCompleteRef.current?.(dyingKind)
       }
     }
     deathRaf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(deathRaf)
-  }, [
-    fieldMode,
-    reducedMotion,
-    count,
-    presetId,
-    leaderPresent,
-    krenkoDyingKind,
-    zoomScale,
-    onDyingComplete,
-    swarmTokens,
-  ])
+  }, [fieldMode, reducedMotion, count, presetId, leaderPresent, krenkoDyingKind, zoomScale])
 
   /** Empty joke blink */
   useEffect(() => {

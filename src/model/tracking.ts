@@ -47,6 +47,11 @@ export function toggleKrenkoPresence(
   return { total: total + 1n, present: true }
 }
 
+/** Goblin total after Krenko leaves the board (−1, floored at 0). */
+export function countAfterBossDismissal(total: bigint): bigint {
+  return total > 0n ? total - 1n : 0n
+}
+
 /**
  * Boss leaves after a “kill Krenko only” wipe. Krenko counts as one goblin in the total,
  * so the counter drops by 1 while the rest of the horde stays on the board.
@@ -56,7 +61,7 @@ export function dismissKrenkoBossKeepHorde(
   present: boolean,
 ): { total: bigint; present: boolean } {
   if (!present) return { total, present: false }
-  return toggleKrenkoPresence(total, true)
+  return { total: countAfterBossDismissal(total), present: false }
 }
 
 /** Parse a manual count from the meter modal (digits only, non-negative). */
