@@ -155,13 +155,16 @@ body {
   height: 38px;
   padding: 0;
   border: 2px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-pressed);
   color: var(--ink);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 2px 0 rgba(30, 48, 30, 0.12);
 }
 
 .char-select__nav:active {
@@ -294,11 +297,18 @@ body {
 .char-tile__textBlock {
   flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+.char-tile__textBlock::-webkit-scrollbar {
+  display: none;
 }
 
 .char-tile__name {
@@ -357,16 +367,16 @@ body {
 
 @keyframes char-tile-flavor-bump {
   0% {
-    transform: scale(1);
     filter: brightness(1);
+    opacity: 0.9;
   }
   40% {
-    transform: scale(1.018);
-    filter: brightness(1.1);
+    filter: brightness(1.12);
+    opacity: 1;
   }
   100% {
-    transform: scale(1);
     filter: brightness(1);
+    opacity: 0.9;
   }
 }
 
@@ -389,9 +399,11 @@ body {
   flex: 0 0 auto;
   padding: 7px 16px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-pressed) 78%, var(--surface-app));
-  border: 1px solid var(--border-subtle);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: var(--surface-pressed);
+  border: 2px solid var(--border-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 2px 0 rgba(30, 48, 30, 0.12);
 }
 
 .char-select__dot {
@@ -400,10 +412,10 @@ body {
   height: 13px;
   padding: 0;
   border-radius: 999px;
-  border: 2px solid color-mix(in srgb, var(--border-strong) 85%, var(--surface-app));
-  background: color-mix(in srgb, var(--surface-panel) 40%, var(--surface-pressed));
+  border: 2px solid var(--border-strong);
+  background: color-mix(in srgb, var(--surface-panel) 50%, var(--surface-pressed));
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 0 rgba(30, 48, 30, 0.08);
   transition:
     transform 0.15s var(--ease-snap),
     background 0.15s ease,
@@ -456,6 +468,54 @@ body {
 .char-select__cta--soon:active {
   transform: none;
   box-shadow: 0 3px 0 rgba(30, 48, 30, 0.18);
+}
+
+/* Main menu: wide viewports (desktop column) — tight card cluster, larger header */
+@media (min-width: 521px) {
+  .menu-hero {
+    /* Header only — all vertical slack lives in .char-select so the cluster centers
+       between the tagline and the recent-stats tab. */
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding-top: clamp(18px, 3.5vh, 40px);
+    padding-bottom: 0;
+  }
+
+  .menu-logotype {
+    font-size: clamp(2.35rem, 5.2vh, 3.35rem);
+  }
+
+  .menu-tagline {
+    margin-top: 12px;
+    font-size: clamp(0.95rem, 2.1vh, 1.2rem);
+  }
+
+  .char-select {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .char-select__cluster {
+    flex: 0 0 auto;
+    width: 100%;
+    margin-block: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .char-select__card-stage {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .char-select__pager {
+    margin-top: 0;
+    margin-bottom: 0;
+    gap: 8px;
+  }
 }
 
 /* Main menu: keep CTA above fixed activity tab; cap card height on short phones */

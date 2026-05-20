@@ -98,6 +98,7 @@ export function MainMenu({
       </div>
 
       <section className="char-select" aria-label="Character select">
+        <div className="char-select__cluster">
         <div className="char-select__card-stage">
           <div
             className="char-select__carousel"
@@ -189,6 +190,7 @@ export function MainMenu({
         >
           {slide.ctaLabel}
         </button>
+        </div>
       </section>
 
       <ActivityDrawer entries={activity} />
